@@ -7,6 +7,7 @@ import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import paymentRoutes from './routes/payments.js';
 import adminRoutes from './routes/admin.js';
+import printRoutes from './routes/print.js';
 import { authenticate } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', authenticate, orderRoutes);
 app.use('/api/payments', authenticate, paymentRoutes);
+app.use('/api/print', authenticate, printRoutes);
 app.use('/api/admin', authenticate, adminRoutes);
 
 // Static files for product images if any

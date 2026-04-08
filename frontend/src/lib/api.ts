@@ -146,7 +146,7 @@ export function getSettings() {
   return get<import('@/types').Setting[]>('/admin/settings');
 }
 
-export function updateSettings(data: { key: string; value: string }[]) {
+export function updateSettings(data: { key_name: string; value: string }[]) {
   return put<import('@/types').Setting[]>('/admin/settings', data);
 }
 
@@ -224,4 +224,9 @@ export function updateProduct(id: number, data: Partial<import('@/types').Produc
 
 export function deleteProduct(id: number) {
   return del<void>(`/admin/products/${id}`);
+}
+
+// ─── Hardware Integration ───────────────────────────────────────
+export function requestPrintReceipt(orderId: number) {
+  return post<{ success: boolean; message: string }>(`/print/receipt/${orderId}`);
 }

@@ -44,61 +44,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-pos-bg-primary p-4">
+    <div className="min-h-screen flex items-center justify-center bg-pos-bg-primary p-4 font-body selection:bg-pos-accent-primary/20">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
+        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        className="w-full max-w-sm"
       >
-        <div className="bg-pos-bg-surface border border-pos-border-default rounded-pos-xl p-8 shadow-pos-modal">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-pos-lg bg-pos-accent-primary/10 flex items-center justify-center mb-4">
-              <Coffee className="w-8 h-8 text-pos-accent-primary" />
+        <div className="bg-[#0f1011] border border-pos-border-default rounded-pos-xl p-10 shadow-pos-dialog">
+          <div className="flex flex-col mb-10">
+            <div className="w-10 h-10 text-pos-text-primary mb-6">
+              <Coffee size={40} strokeWidth={1.5} />
             </div>
-            <h1 className="font-display font-bold text-pos-2xl text-pos-text-primary">
-              Sandwich & Coffee
+            <h1 className="font-display font-wght-510 text-pos-2xl text-pos-text-primary tracking-tight leading-none">
+              Welcome
             </h1>
-            <p className="text-pos-text-secondary text-pos-sm mt-1">POS System</p>
+            <p className="text-pos-text-secondary text-pos-sm mt-2">Sign in to continue.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-pos-sm font-medium text-pos-text-secondary mb-2">
-                Email
-              </label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@example.com"
+                placeholder="Email"
                 autoComplete="email"
-                className="w-full h-14 px-4 bg-pos-bg-elevated border border-pos-border-default rounded-pos-md text-pos-text-primary text-pos-base placeholder:text-pos-text-disabled focus:outline-none focus:border-pos-accent-primary focus:ring-1 focus:ring-pos-accent-primary transition-colors"
+                className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-pos-md text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus outline-none transition-colors"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-pos-sm font-medium text-pos-text-secondary mb-2">
-                Password
-              </label>
+            <div className="space-y-2">
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Password"
                   autoComplete="current-password"
-                  className="w-full h-14 px-4 pr-12 bg-pos-bg-elevated border border-pos-border-default rounded-pos-md text-pos-text-primary text-pos-base placeholder:text-pos-text-disabled focus:outline-none focus:border-pos-accent-primary focus:ring-1 focus:ring-pos-accent-primary transition-colors"
+                  className="w-full h-12 px-4 pr-12 bg-white/5 border border-white/10 rounded-pos-md text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus outline-none transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-pos-text-secondary hover:text-pos-text-primary transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-pos-text-tertiary hover:text-pos-text-primary transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -107,22 +100,19 @@ export default function LoginPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full h-14 bg-pos-accent-primary hover:bg-pos-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-display font-semibold text-pos-md rounded-pos-md transition-colors flex items-center justify-center gap-2"
+              className="w-full h-12 bg-pos-accent-primary text-white font-medium text-pos-sm rounded-pos-md hover:bg-pos-accent-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
             >
               {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
-                </>
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                'Login'
+                'Sign In'
               )}
             </motion.button>
           </form>
         </div>
 
-        <p className="text-center text-pos-text-disabled text-pos-xs mt-6">
-          Sandwich & Coffee POS v1.0
+        <p className="text-center text-pos-text-tertiary text-pos-xs mt-12 mb-8 tracking-widest font-mono uppercase">
+          Retail Management System v2.0
         </p>
       </motion.div>
     </div>

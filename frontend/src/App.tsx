@@ -11,13 +11,11 @@ const QRPaymentPage = lazy(() => import('@/pages/QRPaymentPage'));
 const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'));
 const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'));
 const ProductManagementPage = lazy(() => import('@/pages/admin/ProductManagementPage'));
-
-// Placeholder for missing admin pages
-const UserManagement = () => <div className="text-pos-text-secondary">User Management (Coming Soon)</div>;
-const SettingsPage = () => <div className="text-pos-text-secondary">Settings (Coming Soon)</div>;
-const ReportsPage = () => <div className="text-pos-text-secondary">Reports (Coming Soon)</div>;
-const ShiftManagement = () => <div className="text-pos-text-secondary">Shift Management (Coming Soon)</div>;
-const AuditLogs = () => <div className="text-pos-text-secondary">Audit Logs (Coming Soon)</div>;
+const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'));
+const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
+const ReportsPage = lazy(() => import('@/pages/admin/ReportsPage'));
+const ShiftManagementPage = lazy(() => import('@/pages/admin/ShiftManagementPage'));
+const AuditLogsPage = lazy(() => import('@/pages/admin/AuditLogsPage'));
 
 function LoadingScreen() {
   return (
@@ -73,11 +71,11 @@ export default function App() {
               >
                 <Route index element={<DashboardPage />} />
                 <Route path="products" element={<ProductManagementPage />} />
-                <Route path="users" element={<UserManagement />} />
+                <Route path="users" element={<UserManagementPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
-                <Route path="shifts" element={<ShiftManagement />} />
-                <Route path="audit-logs" element={<AuditLogs />} />
+                <Route path="shifts" element={<ShiftManagementPage />} />
+                <Route path="audit-logs" element={<AuditLogsPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

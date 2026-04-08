@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
+import generatePayload from 'promptpay-qr';
 import db from '../db/schema.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 
@@ -50,10 +51,10 @@ router.post('/:orderId/qr', authenticate, async (req: AuthRequest, res: Response
       payment = db.prepare('SELECT * FROM payments WHERE id = ?').get(result.lastInsertRowid);
     }
 
-    // Generate QR payload and image
+    // Generate PromptPay (EMVCo) QR payload and image
     const amount = order.net_amount;
-    const payload = `promptpay://${promptpayId}/${amount.toFixed(2)}`;
-    const qrImage = await QRCode.toDataURL(payload, { width: 300, margin: 2 });
+    const payload = generatePayload(promptpayId, { amount: amount });
+    const qrImage = await QRCode.toDataURL(payload, { width: 300, margin: 2, scale: 10, color: { dark: '#000000', light: '#ffffff' } });
 
     const expiresAt = new Date(Date.now() + timeoutSeconds * 1000).toISOString();
 

@@ -1,619 +1,405 @@
-# DESIGN.md — POS System (Sandwich & Coffee)
+# Design System Inspiration of Linear
 
-> UI/UX Design Guide สำหรับระบบ POS หน้าร้าน  
-> วิเคราะห์และดัดแปลงจาก Jasper.ai Design Language เพื่อให้เหมาะกับ context POS ร้านอาหาร
+## 1. Visual Theme & Atmosphere
 
----
+Linear's website is a masterclass in dark-mode-first product design — a near-black canvas (`#08090a`) where content emerges from darkness like starlight. The overall impression is one of extreme precision engineering: every element exists in a carefully calibrated hierarchy of luminance, from barely-visible borders (`rgba(255,255,255,0.05)`) to soft, luminous text (`#f7f8f8`). This is not a dark theme applied to a light design — it is darkness as the native medium, where information density is managed through subtle gradations of white opacity rather than color variation.
+
+The typography system is built entirely on Inter Variable with OpenType features `"cv01"` and `"ss03"` enabled globally, giving the typeface a cleaner, more geometric character. Inter is used at a remarkable range of weights — from 300 (light body) through 510 (medium, Linear's signature weight) to 590 (semibold emphasis). The 510 weight is particularly distinctive: it sits between regular and medium, creating a subtle emphasis that doesn't shout. At display sizes (72px, 64px, 48px), Inter uses aggressive negative letter-spacing (-1.584px to -1.056px), creating compressed, authoritative headlines that feel engineered rather than designed. Berkeley Mono serves as the monospace companion for code and technical labels, with fallbacks to ui-monospace, SF Mono, and Menlo.
+
+The color system is almost entirely achromatic — dark backgrounds with white/gray text — punctuated by a single brand accent: Linear's signature indigo-violet (`#5e6ad2` for backgrounds, `#7170ff` for interactive accents). This accent color is used sparingly and intentionally, appearing only on CTAs, active states, and brand elements. The border system uses ultra-thin, semi-transparent white borders (`rgba(255,255,255,0.05)` to `rgba(255,255,255,0.08)`) that create structure without visual noise, like wireframes drawn in moonlight.
+
+**Key Characteristics:**
+
+- Dark-mode-native: `#08090a` marketing background, `#0f1011` panel background, `#191a1b` elevated surfaces
+- Inter Variable with `"cv01", "ss03"` globally — geometric alternates for a cleaner aesthetic
+- Signature weight 510 (between regular and medium) for most UI text
+- Aggressive negative letter-spacing at display sizes (-1.584px at 72px, -1.056px at 48px)
+- Brand indigo-violet: `#5e6ad2` (bg) / `#7170ff` (accent) / `#828fff` (hover) — the only chromatic color in the system
+- Semi-transparent white borders throughout: `rgba(255,255,255,0.05)` to `rgba(255,255,255,0.08)`
+- Button backgrounds at near-zero opacity: `rgba(255,255,255,0.02)` to `rgba(255,255,255,0.05)`
+- Multi-layered shadows with inset variants for depth on dark surfaces
+- Radix UI primitives as the component foundation (6 detected primitives)
+- Success green (`#27a644`, `#10b981`) used only for status indicators
+
+## 2. Color Palette & Roles
 
-## 1. Design Inspiration: Jasper.ai Analysis
+### Background Surfaces
 
-### 1.1 สิ่งที่เรียนรู้จาก Jasper.ai
-
-Jasper.ai ใช้ design language ที่มีลักษณะเด่นดังนี้:
-
-**Visual Language**
-- พื้นหลังเข้ม (dark navy / charcoal) สลับกับ section สีขาว สร้าง contrast ชัดเจน
-- Typography หนา bold มาก สำหรับ hero text — ทำให้อ่านง่ายในทุก viewport
-- CTA buttons โดดเด่นด้วย fill solid สีสว่าง (orange/coral accent) บนพื้นเข้ม
-- Layout แบบ card-based grid ที่เป็นระเบียบ แต่มี visual hierarchy ชัดเจน
-- Whitespace ใจกว้าง — ไม่ยัดข้อมูล ให้แต่ละ element หายใจได้
-
-**Interaction Patterns**
-- Navigation แบบ mega-menu พร้อม icon + description — ผู้ใช้เข้าใจ context ทันที
-- Tab/toggle เพื่อ switch content group (เช่น Solutions by role) โดยไม่ reload page
-- Social proof (logos, numbers) วางเป็น ticker strip — สร้าง trust โดยไม่กินพื้นที่
-- Progressive disclosure: แสดงสิ่งสำคัญก่อน ซ่อน detail ไว้ใต้ expand/modal
-
-**Color & Mood**
-- Primary dark: `#4D77FF` (near-black navy)
-- Accent warm: `#FF6B35` (coral-orange)
-- Text on dark: `#F5F5F0` (warm white)
-- Secondary accent: `#4FD1C5` (teal/cyan highlight)
-
----
-
-## 2. Design Adaptation สำหรับ POS System
-
-### 2.1 Context Difference
-
-| ลักษณะ | Jasper.ai (Marketing SaaS) | POS System ร้านอาหาร |
-|--------|---------------------------|----------------------|
-| ผู้ใช้ | นักการตลาด, office | Cashier ยืนหน้าเคาน์เตอร์ |
-| Device | Desktop / Laptop | Tablet / Touchscreen |
-| Session | ทำงานต่อเนื่อง | Transaction สั้น ๆ ซ้ำ ๆ |
-| Priority | Feature discovery | Speed + Accuracy |
-| Lighting | Office controlled | ร้านสว่าง, มีแสงแดด |
-| Error cost | ต่ำ | สูง (เงิน, ลูกค้ารอ) |
-
-### 2.2 Core Design Principles สำหรับ POS นี้
-
-1. **Speed First** — การ tap ควรเกิด action ทันที feedback ภายใน 150ms
-2. **Big Tap Targets** — ปุ่มทุกอันขนาดขั้นต่ำ 56px × 56px สำหรับ touch
-3. **High Contrast** — ตัวเลขราคา ยอดรวม ต้องอ่านได้จากระยะ arm's length
-4. **Minimal Cognitive Load** — แต่ละหน้าทำงานเดียว ไม่มี decision fatigue
-5. **Error Recovery** — Toast / Banner แจ้งเตือน พร้อม action ทำ undo หรือ retry ชัดเจน
-
----
-
-## 3. Design System
-
-### 3.1 Color Palette
-
-```css
-/* ได้รับแรงบันดาลใจจาก Jasper.ai dark + warm accent แต่ปรับให้เหมาะ POS */
-
---color-bg-primary:      #0F0F1A;   /* Dark navy — ลด eye strain กะกลางคืน */
---color-bg-surface:      #1A1A2E;   /* Card / Panel background */
---color-bg-elevated:     #252540;   /* Modal, Dropdown, Active state */
-
---color-accent-primary:  #FF6B35;   /* Coral-Orange — Primary CTA, ยืนยัน */
---color-accent-success:  #10D98A;   /* Emerald Green — Payment success, confirm */
---color-accent-warning:  #F5A623;   /* Amber — QR timer, expiry warning */
---color-accent-danger:   #FF4757;   /* Red — Cancel, Error, Refund */
---color-accent-info:     #4FC3F7;   /* Light Blue — QR display, reference code */
-
---color-text-primary:    #F5F5F0;   /* Warm white — main content */
---color-text-secondary:  #A0A0B8;   /* Muted — labels, helper text */
---color-text-disabled:   #4A4A6A;   /* Disabled state */
---color-text-on-accent:  #FFFFFF;   /* Text บน accent buttons */
-
---color-border-default:  #2E2E4A;   /* Divider, card border */
---color-border-focus:    #FF6B35;   /* Focus ring */
-
-/* Semantic aliases */
---color-price:           #F5F5F0;   /* ราคา — ต้องชัด */
---color-total:           #FF6B35;   /* ยอดรวม — เน้นพิเศษ */
---color-qr-bg:           #FFFFFF;   /* QR code background ต้องขาว */
-```
-
-**Light Mode (Admin Dashboard — optional)**
-
-```css
---color-bg-primary:      #F8F8FC;
---color-bg-surface:      #FFFFFF;
---color-bg-elevated:     #EEF0FF;
---color-text-primary:    #0F0F1A;
---color-text-secondary:  #5A5A7A;
---color-accent-primary:  #E05A28;   /* Orange เข้มขึ้นบนพื้นขาว */
-```
-
-### 3.2 Typography
-
-```css
-/* Display font: หนา อ่านง่าย จากระยะไกล */
---font-display: 'Sora', sans-serif;       /* สำหรับราคา, ยอดรวม, header */
-
-/* Body font: ชัดเจน อ่านเร็ว */
---font-body:    'IBM Plex Sans Thai', sans-serif;  /* รองรับภาษาไทย */
-
-/* Mono: code, reference number, order number */
---font-mono:    'JetBrains Mono', monospace;
-
-/* Scale */
---text-xs:   11px;   /* Badge, timestamp */
---text-sm:   13px;   /* Label, caption */
---text-base: 15px;   /* Body, list item */
---text-md:   17px;   /* Card title, nav item */
---text-lg:   20px;   /* Section header */
---text-xl:   24px;   /* Page title, order total */
---text-2xl:  32px;   /* Big price display */
---text-3xl:  48px;   /* Payment amount on QR screen */
---text-hero: 64px;   /* Fullscreen confirmation number */
-```
-
-### 3.3 Spacing System
-
-```css
-/* 4px base grid */
---space-1:   4px;
---space-2:   8px;
---space-3:   12px;
---space-4:   16px;
---space-5:   20px;
---space-6:   24px;
---space-8:   32px;
---space-10:  40px;
---space-12:  48px;
---space-16:  64px;
-```
-
-### 3.4 Border Radius
-
-```css
---radius-sm:   6px;    /* Badge, tag */
---radius-md:   10px;   /* Input, small card */
---radius-lg:   16px;   /* Product card */
---radius-xl:   24px;   /* Modal, bottom sheet */
---radius-full: 9999px; /* Pill button, avatar */
-```
-
-### 3.5 Shadows & Elevation
-
-```css
---shadow-card:   0 2px 8px rgba(0,0,0,0.4);
---shadow-modal:  0 16px 48px rgba(0,0,0,0.6);
---shadow-float:  0 4px 16px rgba(255,107,53,0.3);  /* Accent glow effect */
-```
-
----
-
-## 4. Layout Architecture
-
-### 4.1 POS / Cashier View (Tablet 1024px landscape)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  HEADER: Shop Name | Shift Status | Cashier Name | Time   [≡]   │
-├──────────────────────────┬──────────────────────────────────────┤
-│                          │                                        │
-│   PRODUCT GRID           │   ORDER CART                          │
-│   (LEFT PANEL — 60%)     │   (RIGHT PANEL — 40%)                 │
-│                          │                                        │
-│  [Category Tab Bar]      │  Order #2025-001                      │
-│                          │  ─────────────────────                │
-│  ┌──────┐  ┌──────┐     │  ☕ Americano  x2    ฿120             │
-│  │ IMG  │  │ IMG  │     │  🥪 BLT Sand  x1    ฿90              │
-│  │      │  │      │     │  ─────────────────────                │
-│  │ Name │  │ Name │     │  Subtotal           ฿210             │
-│  │ ฿XXX │  │ ฿XXX │     │  Discount           -฿0              │
-│  └──────┘  └──────┘     │  ─────────────────────                │
-│                          │  NET TOTAL          ฿210             │
-│  ┌──────┐  ┌──────┐     │                                        │
-│  │ IMG  │  │ IMG  │     │  [% Discount]  [Cancel Order]         │
-│  └──────┘  └──────┘     │                                        │
-│                          │  ┌─────────────┐  ┌───────────────┐  │
-│                          │  │   CASH      │  │   QR Pay      │  │
-│                          │  └─────────────┘  └───────────────┘  │
-│                          │                                        │
-└──────────────────────────┴──────────────────────────────────────┘
-```
-
-### 4.2 QR Payment Screen (Full-screen overlay)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    <- กลับ                    [X ยกเลิก]        │
-│                                                                   │
-│              ┌────────────────────────────┐                      │
-│              │                            │                      │
-│              │     ████ QR CODE ████      │                      │
-│              │     ████         ████      │                      │
-│              │     ████         ████      │                      │
-│              │                            │                      │
-│              └────────────────────────────┘                      │
-│                                                                   │
-│                    ยอดชำระ: ฿210.00                              │
-│               Ref: ORD-20250407-001                              │
-│                                                                   │
-│              QR หมดอายุใน  04:32                                 │
-│                                                                   │
-│         ┌──────────────────────────────────────────┐            │
-│         │         ✅ ยืนยันการชำระเงินแล้ว          │            │
-│         └──────────────────────────────────────────┘            │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 4.3 Admin Dashboard Layout (Desktop 1280px+)
-
-```
-┌───────┬───────────────────────────────────────────────────────┐
-│       │  TOP BAR: breadcrumb | user menu                       │
-│  NAV  ├───────────────────────────────────────────────────────┤
-│       │                                                         │
-│  Home │  KPI CARDS ROW                                         │
-│  Orders│  [Today Sales] [Orders] [Avg Value] [Top Product]     │
-│  Prod ├───────────────────────────────────────────────────────┤
-│  Pay  │                                                         │
-│  Users│  CHARTS SECTION                                        │
-│  Setup│  [Sales Chart — Line/Bar]  [Payment Breakdown — Pie]   │
-│  Rpts │                                                         │
-│  Audit├───────────────────────────────────────────────────────┤
-│       │  RECENT ORDERS TABLE                                    │
-│       │  # | Time | Items | Total | Method | Status | Action   │
-└───────┴───────────────────────────────────────────────────────┘
-```
-
----
-
-## 5. Components Design
-
-### 5.1 Product Card
-
-```
-┌──────────────────┐
-│   ┌──────────┐   │
-│   │  IMAGE   │   │  <- 1:1 aspect ratio, object-fit: cover
-│   │  (120px) │   │     มี overlay badge "SOLD OUT" เมื่อ inactive
-│   └──────────┘   │
-│  Americano       │  <- font-body, text-md, semi-bold
-│  ฿ 65            │  <- font-display, text-xl, accent-primary color
-└──────────────────┘
-```
-
-- **Hover / Active state**: background เปลี่ยนเป็น `--color-bg-elevated`, border `--color-border-focus`
-- **Pressed state**: scale(0.96) transition 100ms
-- **Inactive (hidden from POS)**: ไม่แสดง
-
-### 5.2 Cart Item Row
-
-```
-[X]  Americano     x  [-] 2 [+]    ฿130
-     (name_snapshot)              (price x qty)
-```
-
-- tap [-] / [+] มี haptic-like visual feedback (scale pulse)
-- ราคารวมอัพเดท real-time ไม่ต้องกดอะไร
-
-### 5.3 Order Total Bar (Fixed Bottom ของ Cart Panel)
-
-```
-┌─────────────────────────────────────────┐
-│  Subtotal    ฿210                       │
-│  Discount    -฿10   [แก้ไข]            │
-│  ═══════════════════════════            │
-│  NET TOTAL   ฿200   <- text-3xl, orange │
-└─────────────────────────────────────────┘
-```
-
-### 5.4 Payment Method Buttons
-
-ใช้ style แบบ Jasper.ai CTA — solid fill + icon + label ใหญ่:
-
-```css
-/* Cash Button */
-background: #10D98A;     /* Success green */
-color: #0F0F1A;
-height: 64px;
-border-radius: var(--radius-lg);
-font-size: var(--text-lg);
-font-weight: 700;
-
-/* QR Button */
-background: var(--color-accent-info);
-color: #0F0F1A;
-```
-
-### 5.5 QR Timer
-
-```jsx
-<TimerBar
-  total={300}           // 5 minutes in seconds
-  warning={60}          // turns amber at 60s
-  danger={20}           // turns red at 20s, starts pulsing
-/>
-```
-
-- Progress bar เต็มความกว้าง, ค่อย ๆ หดลง
-- สี: Green → Amber → Red พร้อม pulse animation
-- แสดง `mm:ss` countdown
-
-### 5.6 Toast Notifications (Jasper-style)
-
-วางที่ top-center, slide-in จากบน:
-
-| Type | Color | Use case |
-|------|-------|----------|
-| Success | #10D98A | Payment confirmed, order saved |
-| Error | #FF4757 | QR expired, confirm failed |
-| Warning | #F5A623 | QR เหลือเวลาน้อย |
-| Info | #4FC3F7 | Printer offline |
-
-Auto-dismiss ใน 4 วินาที, มีปุ่ม X ปิดเอง
-
-### 5.7 Status Badges
-
-```
-PENDING    -> bg: #252540, text: #A0A0B8, border: #4A4A6A
-COMPLETED  -> bg: #0D3B26, text: #10D98A, border: #10D98A
-CANCELLED  -> bg: #3B1515, text: #FF4757, border: #FF4757
-REFUNDED   -> bg: #3B2A0D, text: #F5A623, border: #F5A623
-```
-
-### 5.8 Receipt Preview (Modal)
-
-- พื้นหลัง `#FFFFFF` เสมอ (สำหรับ print)
-- Font: `IBM Plex Mono` — ให้ความรู้สึก thermal printer
-- ขนาด 80mm column (ประมาณ 48 char/line)
-- ปุ่ม "Print" trigger `window.print()` หรือ ESC/POS command
-
----
-
-## 6. Page-by-Page Design Spec
-
-### 6.1 Login Page
-
-**Mood**: dim minimal, professional — เหมือน Jasper login screen
-
-```
-┌─────────────────────────────────────────┐
-│                                         │
-│         [LOGO] ร้าน Sandwich & Coffee   │
-│                                         │
-│         ┌───────────────────────┐       │
-│         │  Email / Username     │       │
-│         └───────────────────────┘       │
-│                                         │
-│         ┌───────────────────────┐       │
-│         │  Password             │       │
-│         └───────────────────────┘       │
-│                                         │
-│         [       เข้าสู่ระบบ       ]     │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
-- พื้นหลัง `--color-bg-primary` ทั้งหน้า
-- Form card: `--color-bg-surface` rounded-xl
-- ไม่มี "สมัครสมาชิก" — ระบบปิด admin จัดการ
-
-### 6.2 POS Main (Cashier)
-
-**Layout**: Split-panel 60/40 ตามแผนภาพ Section 4.1
-
-**Category Tab Bar**:
-- Horizontal scroll tabs
-- Active tab: สีขาว + underline accent-primary
-- เลือก "ทั้งหมด" เป็น default
-
-**Product Grid**:
-- 3 columns บน tablet landscape (4 col บน wide screen)
-- Gap: `--space-4`
-- Infinite scroll หรือ pagination ภายใน category
-
-**Cart Panel**:
-- Fixed, ไม่ scroll ทั้งหน้า — cart scroll เฉพาะ items list
-- Sticky order total + payment buttons ด้านล่าง
-
-### 6.3 QR Payment Screen
-
-- Full screen overlay (z-index สูงสุด)
-- QR image กลางจอ ขนาด 240px x 240px ขั้นต่ำ
-- ยอดเงินแสดง `--text-3xl` + `--font-display`
-- Ref code: `--font-mono`, `--color-accent-info`
-- Timer bar อยู่ด้านล่าง QR
-- ปุ่ม "ยืนยันชำระแล้ว" — full width, 72px height, สีเขียว
-- ปุ่ม "สร้าง QR ใหม่" — แสดงเมื่อ expired เท่านั้น (replace timer)
-
-### 6.4 Receipt Modal
-
-- Overlay semi-opaque backdrop
-- Receipt card: max-width 380px, centered
-- 2 actions: "Print" (primary) และ "ปิด" (ghost)
-- หลัง print -> auto return to POS หน้าใหม่ (order cleared)
-
-### 6.5 Admin Dashboard
-
-**KPI Cards** (Jasper-style stat blocks):
-```
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│ Today Sales │  │ Orders      │  │ Avg Value   │  │ Top Product │
-│             │  │             │  │             │  │             │
-│  ฿12,450   │  │    48 บิล   │  │   ฿259/บิล  │  │ Americano   │
-│ +12% vs    │  │             │  │             │  │ 89 แก้ว     │
-│  เมื่อวาน   │  │             │  │             │  │             │
-└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
-```
-
-- card bg: `--color-bg-surface`
-- number: `--font-display`, `--text-2xl`, `--color-accent-primary`
-- trend badge: สีเขียว/แดงตาม direction
-
-**Chart Section**:
-- Sales by hour: Bar chart (recharts หรือ chart.js)
-- Payment breakdown: Donut chart พร้อม legend
-- สี chart: ใช้ accent palette ที่กำหนด
-
-### 6.6 Admin Product Management
-
-**Table View** (desktop):
-```
-[+ เพิ่มสินค้า]                          [Search]  [Category v]
-────────────────────────────────────────────────────────────────
-#  │ รูป │ ชื่อสินค้า    │ Category │ ราคา  │ Active │ Actions
-────────────────────────────────────────────────────────────────
-1  │ IMG │ Americano    │ Coffee   │ ฿65   │  ON   │ Edit Del
-2  │ IMG │ BLT Sandwich │ Sandwich │ ฿90   │  ON   │ Edit Del
-```
-
-**Add/Edit Product Panel**:
-- Slide-in panel จากขวา (ไม่ใช่ full modal เพื่อ context)
-- Image upload zone: drag & drop
-- Toggle switch สำหรับ is_active (ชัดเจน)
-
-### 6.7 Admin Reports
-
-**Filter Bar** (Jasper-style toolbar):
-```
-[วันนี้] [สัปดาห์นี้] [เดือนนี้] [กำหนดเอง]   [Cashier v] [Method v]  [Export]
-```
-
-- Filters ทำงาน real-time (หรือมีปุ่ม Apply)
-- ผลลัพธ์แสดงทั้ง chart + table ด้านล่าง
-
----
-
-## 7. Interaction & Motion Design
-
-### 7.1 Micro-interactions (เลียนแบบ Jasper responsiveness)
-
-| Action | Animation |
-|--------|-----------|
-| Tap product card | scale(0.94) -> scale(1) ใน 150ms + item เพิ่มใน cart (slide-in) |
-| กด [+] / [-] | number flip animation (CSS counter) |
-| ยืนยัน payment | Fullscreen success burst (circle expand + checkmark draw) |
-| QR timer ใกล้หมด | pulse glow สีแดงบน timer |
-| Toast appear | slide + fade in จาก top, 300ms |
-
-### 7.2 Loading States
-
-- **Skeleton screens** สำหรับ product grid load ครั้งแรก
-- **Spinner** ขนาดเล็กใน button ขณะ API call (replace icon ชั่วคราว)
-- **Optimistic UI**: เพิ่ม item ใน cart ทันที ก่อน API confirm
-
-### 7.3 Error States
-
-- **Form validation**: inline error ใต้ field (ไม่ใช่ alert popup)
-- **API error**: Toast แดง + retry action ถ้าเป็นไปได้
-- **QR expired**: Banner สีแดงบน QR screen พร้อมปุ่ม "สร้างใหม่"
-- **Printer offline**: Warning persistent banner (ไม่ block workflow)
-
----
-
-## 8. Responsive & Touch Considerations
-
-### 8.1 Target Devices
-
-| Device | Resolution | Use Case |
-|--------|-----------|----------|
-| iPad (landscape) | 1024x768 | POS Cashier — PRIMARY |
-| iPad (portrait) | 768x1024 | ใช้ได้ แต่ไม่แนะนำ |
-| Desktop 1280px+ | 1280x800+ | Admin Panel — PRIMARY |
-| Mobile | < 768px | ไม่รองรับ (scope ปัจจุบัน) |
-
-### 8.2 Touch Target Rules
-
-- ปุ่มทุกปุ่ม: min `56px x 56px`
-- Product card: min `140px x 160px`
-- Cart item [-] [+]: min `48px x 48px`
-- Spacing ระหว่าง tap targets: min `8px`
-
-### 8.3 Gesture Support
-
-- Cart items: swipe-left เพื่อ delete (mobile-pattern แต่ใช้ได้บน touch tablet)
-- Product grid: scroll ด้วย swipe ตามปกติ
-- Modal/overlay: tap backdrop เพื่อ dismiss (ยกเว้น payment modal)
-
----
-
-## 9. Accessibility
-
-- Contrast ratio >= 4.5:1 สำหรับ body text (AA)
-- Contrast ratio >= 7:1 สำหรับ price/total (AAA)
-- Focus visible ทุก element (`--color-border-focus` outline)
-- Semantic HTML: `<button>`, `<nav>`, `<main>`, `<section>`
-- ARIA labels สำหรับ icon-only buttons
-- Error messages: `role="alert"` + `aria-live="polite"`
-
----
-
-## 10. Screen Flow Diagram
-
-```
-[Login]
-   |
-   v
-[POS Main — Cashier View]
-   |
-   +--- เลือกสินค้า ---> [Cart Updates Real-time]
-   |
-   +--- กด "Cash" ---> [Enter Cash Modal]
-   |                        |
-   |                        v
-   |                   [Payment Success]
-   |                        |
-   |                        v
-   |                   [Receipt Modal]
-   |                        |
-   |                        v
-   |                   [POS ใหม่ / Clear]
-   |
-   +--- กด "QR Pay" ---> [QR Payment Screen]
-                              |
-                    +---------+
-                    |         |
-               [Timer OK] [Timer Expired]
-                    |         |
-               [Cashier   [Generate New QR]
-               ยืนยัน]
-                    |
-                    v
-              [Payment Success]
-                    |
-                    v
-              [Receipt Modal]
-
-
-[Admin Login]
-   |
-   v
-[Admin Dashboard]
-   |
-   +-> [Product Management]
-   +-> [User Management]
-   +-> [Reports]
-   +-> [Settings (QR/Payment)]
-   +-> [Shift Management]
-   +-> [Audit Logs]
-```
-
----
-
-## 11. Component Library Mapping
-
-แนะนำให้ใช้ library ต่อไปนี้เพื่อ implement ได้เร็ว:
-
-| Component | Library | หมายเหตุ |
-|-----------|---------|---------|
-| UI Base | shadcn/ui | ปรับ theme ด้วย CSS variables ข้างต้น |
-| Charts | recharts | Sales chart, Payment donut |
-| QR Code | qrcode.react | Generate QR ฝั่ง client จาก payload |
-| Date/Time | date-fns | Format Thai locale |
-| Icons | Lucide React | Consistent icon set |
-| Animation | Framer Motion | Page transition, toast, modal |
-| Table | TanStack Table | Reports, product list |
-| Form | React Hook Form + Zod | Validation |
-
----
-
-## 12. Design Token Summary (Quick Reference)
-
-```
-PRIMARY DARK     #0F0F1A    <- Background
-SURFACE          #1A1A2E    <- Cards
-ELEVATED         #252540    <- Modal, active
-
-ACCENT ORANGE    #FF6B35    <- Primary CTA, total price
-ACCENT GREEN     #10D98A    <- Success, confirm, cash button
-ACCENT AMBER     #F5A623    <- Warning, QR expiry
-ACCENT RED       #FF4757    <- Error, cancel, danger
-ACCENT BLUE      #4FC3F7    <- QR ref, info
-
-TEXT PRIMARY     #F5F5F0    <- Main content
-TEXT SECONDARY   #A0A0B8    <- Labels, muted
-
-FONT DISPLAY     Sora              <- Price, numbers, headers
-FONT BODY        IBM Plex Sans Thai <- Thai + English body text
-FONT MONO        JetBrains Mono    <- Order numbers, ref codes
-
-RADIUS LG        16px    <- Product cards
-RADIUS XL        24px    <- Modals, panels
-MIN TAP TARGET   56px    <- All interactive elements
-```
-
----
-
-> **Note**: Design นี้ออกแบบให้สอดคล้องกับ spec.md v1.0
-> Phase 1 (POS + Payment) ให้ focus ที่ POS Main + QR Screen ก่อน
-> Phase 2 (Admin) ให้ implement Admin Dashboard + Reports
-> ทุก component ควร support dark mode as default โดยมี light mode เป็น option สำหรับ Admin panel
+- **Marketing Black** (`#010102` / `#08090a`): The deepest background — the canvas for hero sections and marketing pages. Near-pure black with an imperceptible blue-cool undertone.
+- **Panel Dark** (`#0f1011`): Sidebar and panel backgrounds. One step up from the marketing black.
+- **Level 3 Surface** (`#191a1b`): Elevated surface areas, card backgrounds, dropdowns.
+- **Secondary Surface** (`#28282c`): The lightest dark surface — used for hover states and slightly elevated components.
+
+### Text & Content
+
+- **Primary Text** (`#f7f8f8`): Near-white with a barely-warm cast. The default text color — not pure white, preventing eye strain on dark backgrounds.
+- **Secondary Text** (`#d0d6e0`): Cool silver-gray for body text, descriptions, and secondary content.
+- **Tertiary Text** (`#8a8f98`): Muted gray for placeholders, metadata, and de-emphasized content.
+- **Quaternary Text** (`#62666d`): The most subdued text — timestamps, disabled states, subtle labels.
+
+### Brand & Accent
+
+- **Brand Indigo** (`#5e6ad2`): Primary brand color — used for CTA button backgrounds, brand marks, and key interactive surfaces.
+- **Accent Violet** (`#7170ff`): Brighter variant for interactive elements — links, active states, selected items.
+- **Accent Hover** (`#828fff`): Lighter, more saturated variant for hover states on accent elements.
+- **Security Lavender** (`#7a7fad`): Muted indigo used specifically for security-related UI elements.
+
+### Status Colors
+
+- **Green** (`#27a644`): Primary success/active status. Used for "in progress" indicators.
+- **Emerald** (`#10b981`): Secondary success — pill badges, completion states.
+
+### Border & Divider
+
+- **Border Primary** (`#23252a`): Solid dark border for prominent separations.
+- **Border Secondary** (`#34343a`): Slightly lighter solid border.
+- **Border Tertiary** (`#3e3e44`): Lightest solid border variant.
+- **Border Subtle** (`rgba(255,255,255,0.05)`): Ultra-subtle semi-transparent border — the default.
+- **Border Standard** (`rgba(255,255,255,0.08)`): Standard semi-transparent border for cards, inputs, code blocks.
+- **Line Tint** (`#141516`): Nearly invisible line for the subtlest divisions.
+- **Line Tertiary** (`#18191a`): Slightly more visible divider line.
+
+### Light Mode Neutrals (for light theme contexts)
+
+- **Light Background** (`#f7f8f8`): Page background in light mode.
+- **Light Surface** (`#f3f4f5` / `#f5f6f7`): Subtle surface tinting.
+- **Light Border** (`#d0d6e0`): Visible border in light contexts.
+- **Light Border Alt** (`#e6e6e6`): Alternative lighter border.
+- **Pure White** (`#ffffff`): Card surfaces, highlights.
+
+### Overlay
+
+- **Overlay Primary** (`rgba(0,0,0,0.85)`): Modal/dialog backdrop — extremely dark for focus isolation.
+
+## 3. Typography Rules
+
+### Font Family
+
+- **Primary**: `Inter Variable`, with fallbacks: `SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue`
+- **Monospace**: `Berkeley Mono`, with fallbacks: `ui-monospace, SF Mono, Menlo`
+- **OpenType Features**: `"cv01", "ss03"` enabled globally — cv01 provides an alternate lowercase 'a' (single-story), ss03 adjusts specific letterforms for a cleaner geometric appearance.
+
+### Hierarchy
+
+| Role | Font | Size | Weight | Line Height | Letter Spacing | Notes |
+|------|------|------|--------|-------------|----------------|-------|
+| Display XL | Inter Variable | 72px (4.50rem) | 510 | 1.00 (tight) | -1.584px | Hero headlines, maximum impact |
+| Display Large | Inter Variable | 64px (4.00rem) | 510 | 1.00 (tight) | -1.408px | Secondary hero text |
+| Display | Inter Variable | 48px (3.00rem) | 510 | 1.00 (tight) | -1.056px | Section headlines |
+| Heading 1 | Inter Variable | 32px (2.00rem) | 400 | 1.13 (tight) | -0.704px | Major section titles |
+| Heading 2 | Inter Variable | 24px (1.50rem) | 400 | 1.33 | -0.288px | Sub-section headings |
+| Heading 3 | Inter Variable | 20px (1.25rem) | 590 | 1.33 | -0.24px | Feature titles, card headers |
+| Body Large | Inter Variable | 18px (1.13rem) | 400 | 1.60 (relaxed) | -0.165px | Introduction text, feature descriptions |
+| Body Emphasis | Inter Variable | 17px (1.06rem) | 590 | 1.60 (relaxed) | normal | Emphasized body, sub-headings in content |
+| Body | Inter Variable | 16px (1.00rem) | 400 | 1.50 | normal | Standard reading text |
+| Body Medium | Inter Variable | 16px (1.00rem) | 510 | 1.50 | normal | Navigation, labels |
+| Body Semibold | Inter Variable | 16px (1.00rem) | 590 | 1.50 | normal | Strong emphasis |
+| Small | Inter Variable | 15px (0.94rem) | 400 | 1.60 (relaxed) | -0.165px | Secondary body text |
+| Small Medium | Inter Variable | 15px (0.94rem) | 510 | 1.60 (relaxed) | -0.165px | Emphasized small text |
+| Small Semibold | Inter Variable | 15px (0.94rem) | 590 | 1.60 (relaxed) | -0.165px | Strong small text |
+| Small Light | Inter Variable | 15px (0.94rem) | 300 | 1.47 | -0.165px | De-emphasized body |
+| Caption Large | Inter Variable | 14px (0.88rem) | 510–590 | 1.50 | -0.182px | Sub-labels, category headers |
+| Caption | Inter Variable | 13px (0.81rem) | 400–510 | 1.50 | -0.13px | Metadata, timestamps |
+| Label | Inter Variable | 12px (0.75rem) | 400–590 | 1.40 | normal | Button text, small labels |
+| Micro | Inter Variable | 11px (0.69rem) | 510 | 1.40 | normal | Tiny labels |
+| Tiny | Inter Variable | 10px (0.63rem) | 400–510 | 1.50 | -0.15px | Overline text, sometimes uppercase |
+| Link Large | Inter Variable | 16px (1.00rem) | 400 | 1.50 | normal | Standard links |
+| Link Medium | Inter Variable | 15px (0.94rem) | 510 | 2.67 | normal | Spaced navigation links |
+| Link Small | Inter Variable | 14px (0.88rem) | 510 | 1.50 | normal | Compact links |
+| Link Caption | Inter Variable | 13px (0.81rem) | 400–510 | 1.50 | -0.13px | Footer, metadata links |
+| Mono Body | Berkeley Mono | 14px (0.88rem) | 400 | 1.50 | normal | Code blocks |
+| Mono Caption | Berkeley Mono | 13px (0.81rem) | 400 | 1.50 | normal | Code labels |
+| Mono Label | Berkeley Mono | 12px (0.75rem) | 400 | 1.40 | normal | Code metadata, sometimes uppercase |
+
+### Principles
+
+- **510 is the signature weight**: Linear uses Inter Variable's 510 weight (between regular 400 and medium 500) as its default emphasis weight. This creates a subtly bolded feel without the heaviness of traditional medium or semibold.
+- **Compression at scale**: Display sizes use progressively tighter letter-spacing — -1.584px at 72px, -1.408px at 64px, -1.056px at 48px, -0.704px at 32px. Below 24px, spacing relaxes toward normal.
+- **OpenType as identity**: `"cv01", "ss03"` aren't decorative — they transform Inter into Linear's distinctive typeface, giving it a more geometric, purposeful character.
+- **Three-tier weight system**: 400 (reading), 510 (emphasis/UI), 590 (strong emphasis). The 300 weight appears only in deliberately de-emphasized contexts.
+
+## 4. Component Stylings
+
+### Buttons
+
+**Ghost Button (Default)**
+
+- Background: `rgba(255,255,255,0.02)`
+- Text: `#e2e4e7` (near-white)
+- Padding: comfortable
+- Radius: 6px
+- Border: `1px solid rgb(36, 40, 44)`
+- Outline: none
+- Focus shadow: `rgba(0,0,0,0.1) 0px 4px 12px`
+- Use: Standard actions, secondary CTAs
+
+**Subtle Button**
+
+- Background: `rgba(255,255,255,0.04)`
+- Text: `#d0d6e0` (silver-gray)
+- Padding: 0px 6px
+- Radius: 6px
+- Use: Toolbar actions, contextual buttons
+
+**Primary Brand Button (Inferred)**
+
+- Background: `#5e6ad2` (brand indigo)
+- Text: `#ffffff`
+- Padding: 8px 16px
+- Radius: 6px
+- Hover: `#828fff` shift
+- Use: Primary CTAs ("Start building", "Sign up")
+
+**Icon Button (Circle)**
+
+- Background: `rgba(255,255,255,0.03)` or `rgba(255,255,255,0.05)`
+- Text: `#f7f8f8` or `#ffffff`
+- Radius: 50%
+- Border: `1px solid rgba(255,255,255,0.08)`
+- Use: Close, menu toggle, icon-only actions
+
+**Pill Button**
+
+- Background: transparent
+- Text: `#d0d6e0`
+- Padding: 0px 10px 0px 5px
+- Radius: 9999px
+- Border: `1px solid rgb(35, 37, 42)`
+- Use: Filter chips, tags, status indicators
+
+**Small Toolbar Button**
+
+- Background: `rgba(255,255,255,0.05)`
+- Text: `#62666d` (muted)
+- Radius: 2px
+- Border: `1px solid rgba(255,255,255,0.05)`
+- Shadow: `rgba(0,0,0,0.03) 0px 1.2px 0px 0px`
+- Font: 12px weight 510
+- Use: Toolbar actions, quick-access controls
+
+### Cards & Containers
+
+- Background: `rgba(255,255,255,0.02)` to `rgba(255,255,255,0.05)` (never solid — always translucent)
+- Border: `1px solid rgba(255,255,255,0.08)` (standard) or `1px solid rgba(255,255,255,0.05)` (subtle)
+- Radius: 8px (standard), 12px (featured), 22px (large panels)
+- Shadow: `rgba(0,0,0,0.2) 0px 0px 0px 1px` or layered multi-shadow stacks
+- Hover: subtle background opacity increase
+
+### Inputs & Forms
+
+**Text Area**
+
+- Background: `rgba(255,255,255,0.02)`
+- Text: `#d0d6e0`
+- Border: `1px solid rgba(255,255,255,0.08)`
+- Padding: 12px 14px
+- Radius: 6px
+
+**Search Input**
+
+- Background: transparent
+- Text: `#f7f8f8`
+- Padding: 1px 32px (icon-aware)
+
+**Button-style Input**
+
+- Text: `#8a8f98`
+- Padding: 1px 6px
+- Radius: 5px
+- Focus shadow: multi-layer stack
+
+### Badges & Pills
+
+**Success Pill**
+
+- Background: `#10b981`
+- Text: `#f7f8f8`
+- Radius: 50% (circular)
+- Font: 10px weight 510
+- Use: Status dots, completion indicators
+
+**Neutral Pill**
+
+- Background: transparent
+- Text: `#d0d6e0`
+- Padding: 0px 10px 0px 5px
+- Radius: 9999px
+- Border: `1px solid rgb(35, 37, 42)`
+- Font: 12px weight 510
+- Use: Tags, filter chips, category labels
+
+**Subtle Badge**
+
+- Background: `rgba(255,255,255,0.05)`
+- Text: `#f7f8f8`
+- Padding: 0px 8px 0px 2px
+- Radius: 2px
+- Border: `1px solid rgba(255,255,255,0.05)`
+- Font: 10px weight 510
+- Use: Inline labels, version tags
+
+### Navigation
+
+- Dark sticky header on near-black background
+- Linear logomark left-aligned (SVG icon)
+- Links: Inter Variable 13–14px weight 510, `#d0d6e0` text
+- Active/hover: text lightens to `#f7f8f8`
+- CTA: Brand indigo button or ghost button
+- Mobile: hamburger collapse
+- Search: command palette trigger (`/` or `Cmd+K`)
+
+### Image Treatment
+
+- Product screenshots on dark backgrounds with subtle border (`rgba(255,255,255,0.08)`)
+- Top-rounded images: `12px 12px 0px 0px` radius
+- Dashboard/issue previews dominate feature sections
+- Subtle shadow beneath screenshots: `rgba(0,0,0,0.4) 0px 2px 4px`
+
+## 5. Layout Principles
+
+### Spacing System
+
+- Base unit: 8px
+- Scale: 1px, 4px, 7px, 8px, 11px, 12px, 16px, 19px, 20px, 22px, 24px, 28px, 32px, 35px
+- The 7px and 11px values suggest micro-adjustments for optical alignment
+- Primary rhythm: 8px, 16px, 24px, 32px (standard 8px grid)
+
+### Grid & Container
+
+- Max content width: approximately 1200px
+- Hero: centered single-column with generous vertical padding
+- Feature sections: 2–3 column grids for feature cards
+- Full-width dark sections with internal max-width constraints
+- Changelog: single-column timeline layout
+
+### Whitespace Philosophy
+
+- **Darkness as space**: On Linear's dark canvas, empty space isn't white — it's absence. The near-black background IS the whitespace, and content emerges from it.
+- **Compressed headlines, expanded surroundings**: Display text at 72px with -1.584px tracking is dense and compressed, but sits within vast dark padding. The contrast between typographic density and spatial generosity creates tension.
+- **Section isolation**: Each feature section is separated by generous vertical padding (80px+) with no visible dividers — the dark background provides natural separation.
+
+### Border Radius Scale
+
+- Micro (2px): Inline badges, toolbar buttons, subtle tags
+- Standard (4px): Small containers, list items
+- Comfortable (6px): Buttons, inputs, functional elements
+- Card (8px): Cards, dropdowns, popovers
+- Panel (12px): Panels, featured cards, section containers
+- Large (22px): Large panel elements
+- Full Pill (9999px): Chips, filter pills, status tags
+- Circle (50%): Icon buttons, avatars, status dots
+
+## 6. Depth & Elevation
+
+| Level | Treatment | Use |
+|-------|-----------|-----|
+| Flat (Level 0) | No shadow, `#010102` bg | Page background, deepest canvas |
+| Subtle (Level 1) | `rgba(0,0,0,0.03) 0px 1.2px 0px` | Toolbar buttons, micro-elevation |
+| Surface (Level 2) | `rgba(255,255,255,0.05)` bg + `1px solid rgba(255,255,255,0.08)` border | Cards, input fields, containers |
+| Inset (Level 2b) | `rgba(0,0,0,0.2) 0px 0px 12px 0px inset` | Recessed panels, inner shadows |
+| Ring (Level 3) | `rgba(0,0,0,0.2) 0px 0px 0px 1px` | Border-as-shadow technique |
+| Elevated (Level 4) | `rgba(0,0,0,0.4) 0px 2px 4px` | Floating elements, dropdowns |
+| Dialog (Level 5) | Multi-layer stack: `rgba(0,0,0,0) 0px 8px 2px, rgba(0,0,0,0.01) 0px 5px 2px, rgba(0,0,0,0.04) 0px 3px 2px, rgba(0,0,0,0.07) 0px 1px 1px, rgba(0,0,0,0.08) 0px 0px 1px` | Popovers, command palette, modals |
+| Focus | `rgba(0,0,0,0.1) 0px 4px 12px` + additional layers | Keyboard focus on interactive elements |
+
+**Shadow Philosophy**: On dark surfaces, traditional shadows (dark on dark) are nearly invisible. Linear solves this by using semi-transparent white borders as the primary depth indicator. Elevation isn't communicated through shadow darkness but through background luminance steps — each level slightly increases the white opacity of the surface background (`0.02` → `0.04` → `0.05`), creating a subtle stacking effect. The inset shadow technique (`rgba(0,0,0,0.2) 0px 0px 12px 0px inset`) creates a unique "sunken" effect for recessed panels, adding dimensional depth that traditional dark themes lack.
+
+## 7. Do's and Don'ts
+
+### Do
+
+- Use Inter Variable with `"cv01", "ss03"` on ALL text — these features are fundamental to Linear's typeface identity
+- Use weight 510 as your default emphasis weight — it's Linear's signature between-weight
+- Apply aggressive negative letter-spacing at display sizes (-1.584px at 72px, -1.056px at 48px)
+- Build on near-black backgrounds: `#08090a` for marketing, `#0f1011` for panels, `#191a1b` for elevated surfaces
+- Use semi-transparent white borders (`rgba(255,255,255,0.05)` to `rgba(255,255,255,0.08)`) instead of solid dark borders
+- Keep button backgrounds nearly transparent: `rgba(255,255,255,0.02)` to `rgba(255,255,255,0.05)`
+- Reserve brand indigo (`#5e6ad2` / `#7170ff`) for primary CTAs and interactive accents only
+- Use `#f7f8f8` for primary text — not pure `#ffffff`, which would be too harsh
+- Apply the luminance stacking model: deeper = darker bg, elevated = slightly lighter bg
+
+### Don't
+
+- Don't use pure white (`#ffffff`) as primary text — `#f7f8f8` prevents eye strain
+- Don't use solid colored backgrounds for buttons — transparency is the system (rgba white at 0.02–0.05)
+- Don't apply the brand indigo decoratively — it's reserved for interactive/CTA elements only
+- Don't use positive letter-spacing on display text — Inter at large sizes always runs negative
+- Don't use visible/opaque borders on dark backgrounds — borders should be whisper-thin semi-transparent white
+- Don't skip the OpenType features (`"cv01", "ss03"`) — without them, it's generic Inter, not Linear's Inter
+- Don't use weight 700 (bold) — Linear's maximum weight is 590, with 510 as the workhorse
+- Don't introduce warm colors into the UI chrome — the palette is cool gray with blue-violet accent only
+- Don't use drop shadows for elevation on dark surfaces — use background luminance stepping instead
+
+## 8. Responsive Behavior
+
+### Breakpoints
+
+| Name | Width | Key Changes |
+|------|-------|-------------|
+| Mobile Small | <600px | Single column, compact padding |
+| Mobile | 600–640px | Standard mobile layout |
+| Tablet | 640–768px | Two-column grids begin |
+| Desktop Small | 768–1024px | Full card grids, expanded padding |
+| Desktop | 1024–1280px | Standard desktop, full navigation |
+| Large Desktop | >1280px | Full layout, generous margins |
+
+### Touch Targets
+
+- Buttons use comfortable padding with 6px radius minimum
+- Navigation links at 13–14px with adequate spacing
+- Pill tags have 10px horizontal padding for touch accessibility
+- Icon buttons at 50% radius ensure circular, easy-to-tap targets
+- Search trigger is prominently placed with generous hit area
+
+### Collapsing Strategy
+
+- Hero: 72px → 48px → 32px display text, tracking adjusts proportionally
+- Navigation: horizontal links + CTAs → hamburger menu at 768px
+- Feature cards: 3-column → 2-column → single column stacked
+- Product screenshots: maintain aspect ratio, may reduce padding
+- Changelog: timeline maintains single-column through all sizes
+- Footer: multi-column → stacked single column
+- Section spacing: 80px+ → 48px on mobile
+
+### Image Behavior
+
+- Dashboard screenshots maintain border treatment at all sizes
+- Hero visuals simplify on mobile (fewer floating UI elements)
+- Product screenshots use responsive sizing with consistent radius
+- Dark background ensures screenshots blend naturally at any viewport
+
+## 9. Agent Prompt Guide
+
+### Quick Color Reference
+
+- Primary CTA: Brand Indigo (`#5e6ad2`)
+- Page Background: Marketing Black (`#08090a`)
+- Panel Background: Panel Dark (`#0f1011`)
+- Surface: Level 3 (`#191a1b`)
+- Heading text: Primary White (`#f7f8f8`)
+- Body text: Silver Gray (`#d0d6e0`)
+- Muted text: Tertiary Gray (`#8a8f98`)
+- Subtle text: Quaternary Gray (`#62666d`)
+- Accent: Violet (`#7170ff`)
+- Accent Hover: Light Violet (`#828fff`)
+- Border (default): `rgba(255,255,255,0.08)`
+- Border (subtle): `rgba(255,255,255,0.05)`
+- Focus ring: Multi-layer shadow stack
+
+### Example Component Prompts
+
+- "Create a hero section on `#08090a` background. Headline at 48px Inter Variable weight 510, line-height 1.00, letter-spacing -1.056px, color `#f7f8f8`, font-feature-settings `'cv01', 'ss03'`. Subtitle at 18px weight 400, line-height 1.60, color `#8a8f98`. Brand CTA button (`#5e6ad2`, 6px radius, 8px 16px padding) and ghost button (`rgba(255,255,255,0.02)` bg, `1px solid rgba(255,255,255,0.08)` border, 6px radius)."
+- "Design a card on dark background: `rgba(255,255,255,0.02)` background, `1px solid rgba(255,255,255,0.08)` border, 8px radius. Title at 20px Inter Variable weight 590, letter-spacing -0.24px, color `#f7f8f8`. Body at 15px weight 400, color `#8a8f98`, letter-spacing -0.165px."
+- "Build a pill badge: transparent background, `#d0d6e0` text, 9999px radius, 0px 10px padding, `1px solid #23252a` border, 12px Inter Variable weight 510."
+- "Create navigation: dark sticky header on `#0f1011`. Inter Variable 13px weight 510 for links, `#d0d6e0` text. Brand indigo CTA `#5e6ad2` right-aligned with 6px radius. Bottom border: `1px solid rgba(255,255,255,0.05)`."
+- "Design a command palette: `#191a1b` background, `1px solid rgba(255,255,255,0.08)` border, 12px radius, multi-layer shadow stack. Input at 16px Inter Variable weight 400, `#f7f8f8` text. Results list with 13px weight 510 labels in `#d0d6e0` and 12px metadata in `#62666d`."
+
+### Iteration Guide
+
+1. Always set font-feature-settings `"cv01", "ss03"` on all Inter text — this is non-negotiable for Linear's look
+2. Letter-spacing scales with font size: -1.584px at 72px, -1.056px at 48px, -0.704px at 32px, normal below 16px
+3. Three weights: 400 (read), 510 (emphasize/navigate), 590 (announce)
+4. Surface elevation via background opacity: `rgba(255,255,255, 0.02 → 0.04 → 0.05)` — never solid backgrounds on dark
+5. Brand indigo (`#5e6ad2` / `#7170ff`) is the only chromatic color — everything else is grayscale
+6. Borders are always semi-transparent white, never solid dark colors on dark backgrounds
+7. Berkeley Mono for any code or technical content, Inter Variable for everything else

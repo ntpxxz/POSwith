@@ -11,8 +11,11 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
-import { getQR, confirmPayment, getOrderById } from '@/lib/api';
+import { getQR, confirmPayment, getOrderById, getReceipt } from '@/lib/api';
 import type { Order } from '@/types';
+import { Receipt } from '@/components/Receipt';
+import { useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 function formatPrice(n: number): string {
     return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,6 +30,8 @@ export default function QRPaymentPage() {
     const [confirming, setConfirming] = useState(false);
     const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
     const [expired, setExpired] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [orderInfo, setOrderInfo] = useState<any>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -75,9 +80,15 @@ export default function QRPaymentPage() {
         setConfirming(true);
         try {
             await confirmPayment(Number(orderId));
+            const fullOrder = await getReceipt(Number(orderId));
+            setOrderInfo(fullOrder);
+            setShowSuccess(true);
             toast.success('Payment confirmed successfully');
-            // Show success state briefly then navigate
-            setTimeout(() => navigate('/'), 1500);
+
+            // Auto print
+            setTimeout(() => {
+                window.print();
+            }, 500);
         } catch (err: any) {
             toast.error(err.message || 'Failed to confirm payment');
         } finally {
@@ -110,46 +121,111 @@ export default function QRPaymentPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-pos-bg-primary flex items-center justify-center">
-                <Loader2 size={48} className="animate-spin text-pos-accent-primary" />
+                <Loader2 size={32} className="animate-spin text-pos-text-primary" />
+            </div>
+        );
+    }
+
+    if (showSuccess && orderInfo) {
+        return (
+            <div className="min-h-screen bg-pos-bg-primary flex flex-col items-center justify-center p-6 selection:bg-pos-accent-primary/20">
+                <div className="no-print w-full max-w-sm flex flex-col gap-12 font-body">
+                    <div className="text-center">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="text-pos-text-primary mb-8 flex justify-center"
+                        >
+                            <CheckCircle2 size={72} strokeWidth={1} />
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="space-y-2"
+                        >
+                            <h2 className="font-display font-wght-510 text-pos-2xl text-pos-text-primary leading-none">Order complete</h2>
+                            <p className="font-mono text-pos-xs text-pos-text-tertiary">Receipt Number: {orderInfo.orderNumber}</p>
+                        </motion.div>
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="bg-[#191a1b] rounded-pos-xl shadow-pos-dialog overflow-hidden border border-pos-border-default"
+                    >
+                        <div className="max-h-[50vh] overflow-y-auto">
+                            <Receipt order={orderInfo} />
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        className="flex flex-col gap-3"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                    >
+                        <button
+                            onClick={() => window.print()}
+                            className="w-full py-4 bg-white/10 text-pos-text-primary border border-pos-border-default rounded-pos-md font-medium text-pos-sm transition-colors flex items-center justify-center gap-2 hover:bg-white/15"
+                        >
+                            Print Receipt
+                        </button>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="w-full py-4 text-pos-text-secondary hover:text-pos-text-primary font-medium text-pos-sm transition-colors"
+                        >
+                            Back to Register
+                        </button>
+                    </motion.div>
+                </div>
+
+                {createPortal(
+                    <div id="print-root">
+                        <Receipt order={orderInfo} />
+                    </div>,
+                    document.body
+                )}
             </div>
         );
     }
 
     if (!qrData || !order) {
         return (
-            <div className="min-h-screen bg-pos-bg-primary flex flex-col items-center justify-center p-6 text-center">
-                <AlertCircle size={64} className="text-pos-accent-danger mb-4" />
-                <h2 className="text-pos-xl font-display font-bold text-pos-text-primary mb-2">Error Loading Payment</h2>
-                <p className="text-pos-text-secondary mb-6">We couldn't load the payment information. Please try again.</p>
+            <div className="min-h-screen bg-pos-bg-primary flex flex-col items-center justify-center p-6 text-center font-body">
+                <AlertCircle size={48} className="text-pos-accent-danger mb-4" />
+                <h2 className="font-display font-wght-510 text-pos-xl text-pos-text-primary mb-2">Error</h2>
+                <p className="text-pos-text-tertiary mb-8 text-pos-sm">We couldn't load the payment information.</p>
                 <button
                     onClick={() => navigate('/')}
-                    className="px-6 py-2 bg-pos-accent-primary hover:bg-pos-accent-primary/90 text-white rounded-pos-md flex items-center gap-2"
+                    className="px-8 py-3 bg-white/10 border border-white/20 text-pos-text-primary rounded-pos-md hover:bg-white/15 transition-colors font-medium text-pos-sm"
                 >
-                    <ChevronLeft size={18} /> Back to POS
+                    Back to Register
                 </button>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-pos-bg-primary flex items-center justify-center p-4">
+        <div className="min-h-screen bg-pos-bg-primary flex flex-col items-center justify-center p-4 font-body selection:bg-pos-accent-primary/20">
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-md bg-pos-bg-surface border border-pos-border-default rounded-pos-xl shadow-pos-modal overflow-hidden flex flex-col"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-[400px] bg-[#0f1011] border border-pos-border-default rounded-pos-xl shadow-pos-dialog overflow-hidden flex flex-col"
             >
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-pos-border-default flex items-center justify-between bg-pos-bg-elevated/30">
+                <div className="px-6 py-4 border-b border-pos-border-default flex items-center justify-between">
                     <button
-                        onClick={() => navigate('/')}
-                        className="p-2 rounded-pos-md text-pos-text-secondary hover:text-pos-text-primary hover:bg-pos-bg-elevated transition-colors"
+                        onClick={() => navigate(-1)}
+                        className="text-pos-text-tertiary hover:text-pos-text-primary transition-colors"
                     >
-                        <ChevronLeft size={20} />
+                        <ChevronLeft size={24} />
                     </button>
-                    <span className="font-display font-bold text-pos-md text-pos-text-primary">PromptPay QR</span>
+                    <span className="font-body text-pos-base font-semibold text-pos-text-primary tracking-tight">PromptPay</span>
                     <button
                         onClick={() => navigate('/')}
-                        className="p-2 rounded-pos-md text-pos-text-secondary hover:text-pos-accent-danger hover:bg-pos-bg-elevated transition-colors"
+                        className="text-pos-text-tertiary hover:text-pos-text-primary transition-colors"
                     >
                         <X size={20} />
                     </button>
@@ -157,88 +233,93 @@ export default function QRPaymentPage() {
 
                 {/* Content */}
                 <div className="flex-1 p-8 flex flex-col items-center">
-                    <div className="mb-6 text-center">
-                        <p className="text-pos-sm text-pos-text-secondary uppercase tracking-widest mb-1 font-medium">Order Amount</p>
-                        <h2 className="text-pos-hero font-display font-bold text-pos-accent-primary leading-none">
+                    <div className="mb-8 text-center">
+                        <p className="font-mono text-pos-xs text-pos-text-tertiary uppercase tracking-widest mb-2 font-medium">Total Amount</p>
+                        <h2 className="font-display text-pos-3xl font-wght-510 text-pos-text-primary tracking-tight">
                             ฿{formatPrice(qrData.amount)}
                         </h2>
                     </div>
 
-                    <div className="relative p-6 bg-white rounded-pos-lg shadow-pos-card mb-6">
-                        <QRCodeSVG
-                            value={qrData.qrCode}
-                            size={220}
-                            level="M"
-                            includeMargin
-                        />
+                    <div className="relative p-6 bg-white rounded-pos-lg border border-pos-border-default mb-8 flex items-center justify-center">
+                        {qrData.qrCode.startsWith('data:') ? (
+                            <img
+                                src={qrData.qrCode}
+                                alt="Payment QR Code"
+                                className="w-[180px] h-[180px]"
+                            />
+                        ) : (
+                            <QRCodeSVG
+                                value={qrData.qrCode}
+                                size={180}
+                                level="M"
+                                includeMargin
+                            />
+                        )}
                         <AnimatePresence>
                             {expired && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="absolute inset-0 bg-white/90 rounded-pos-lg flex flex-col items-center justify-center p-4 text-center"
+                                    className="absolute inset-0 bg-pos-bg-primary/95 rounded-pos-md flex flex-col items-center justify-center p-4 text-center"
                                 >
-                                    <AlertCircle size={48} className="text-pos-accent-danger mb-3" />
-                                    <p className="text-gray-900 font-bold text-pos-md mb-4">QR Code Expired</p>
+                                    <AlertCircle size={32} className="text-pos-accent-danger mb-4" />
+                                    <p className="text-pos-text-primary font-bold text-pos-base mb-6">Payment Expired</p>
                                     <button
                                         onClick={handleRefreshQR}
-                                        className="px-6 py-2 bg-pos-accent-primary text-white rounded-pos-full font-bold shadow-pos-float flex items-center gap-2"
+                                        className="h-10 px-6 bg-pos-accent-primary text-white rounded-pos-md font-medium text-pos-sm transition-colors hover:bg-pos-accent-hover"
                                     >
-                                        <RefreshCw size={18} /> Refresh QR
+                                        Refresh Code
                                     </button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
 
-                    <div className="w-full space-y-4">
-                        <div className="flex items-center justify-between text-pos-sm">
-                            <span className="text-pos-text-secondary">Reference:</span>
-                            <span className="text-pos-text-primary font-mono font-bold tracking-wider">{qrData.reference}</span>
+                    <div className="w-full space-y-6">
+                        <div className="flex items-center justify-between text-pos-xs font-mono">
+                            <span className="text-pos-text-tertiary uppercase tracking-widest">Reference</span>
+                            <span className="text-pos-text-primary font-bold tracking-widest">{qrData.reference}</span>
                         </div>
 
-                        {/* Timer Bar */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-pos-xs font-bold uppercase tracking-wider">
-                                <span className={timeLeft < 60 ? 'text-pos-accent-warning' : 'text-pos-text-secondary'}>
-                                    {timeLeft < 60 ? 'Hurry up!' : 'Waiting for payment'}
+                        {/* Timer */}
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-pos-nano font-mono font-medium uppercase tracking-widest">
+                                <span className={timeLeft < 60 ? 'text-pos-accent-danger' : 'text-pos-text-tertiary'}>
+                                    {timeLeft < 60 ? 'Hurry' : 'Waiting'}
                                 </span>
-                                <span className={timeLeft < 30 ? 'text-pos-accent-danger font-mono' : 'text-pos-text-primary font-mono'}>
+                                <span className="text-pos-text-primary">
                                     {formatTime(timeLeft)}
                                 </span>
                             </div>
-                            <div className="h-1.5 w-full bg-pos-bg-elevated rounded-full overflow-hidden">
+                            <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
                                 <motion.div
                                     initial={false}
                                     animate={{
                                         width: `${(timeLeft / 300) * 100}%`,
-                                        backgroundColor: timeLeft < 30 ? '#FF4757' : timeLeft < 60 ? '#F5A623' : '#10D98A'
+                                        backgroundColor: timeLeft < 60 ? '#ef4444' : '#f7f8f8'
                                     }}
                                     className="h-full"
                                 />
                             </div>
                         </div>
 
-                        <p className="text-pos-xs text-pos-text-secondary text-center px-4 leading-relaxed italic">
-                            Ask the customer to scan this QR code with their banking app. Then press the button below to confirm.
+                        <p className="text-pos-nano text-pos-text-tertiary text-center px-4 leading-relaxed text-pretty">
+                            Please use your banking app to scan the code. Confirm once done.
                         </p>
                     </div>
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-6 bg-pos-bg-elevated/30 border-t border-pos-border-default">
+                <div className="p-6 bg-[#08090a] border-t border-pos-border-default">
                     <button
                         onClick={handleConfirm}
                         disabled={confirming || expired}
-                        className="w-full h-16 bg-pos-accent-success text-pos-bg-primary rounded-pos-lg font-bold text-pos-md flex items-center justify-center gap-3 shadow-pos-float hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:grayscale"
+                        className="w-full h-12 bg-pos-accent-primary text-white rounded-pos-md font-medium text-pos-sm flex items-center justify-center gap-2 hover:bg-pos-accent-hover transition-colors disabled:opacity-40"
                     >
                         {confirming ? (
-                            <Loader2 size={24} className="animate-spin" />
+                            <Loader2 size={20} className="animate-spin" />
                         ) : (
-                            <>
-                                <CheckCircle2 size={24} />
-                                Confirm Payment Received
-                            </>
+                            'Confirm Payment'
                         )}
                     </button>
                 </div>

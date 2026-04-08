@@ -2,8 +2,10 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  shopName?: string;
   role: 'ADMIN' | 'CASHIER';
   active: boolean;
+  is_active?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,8 +58,10 @@ export interface Order {
   discountValue?: number;
   discountAmount: number;
   netTotal: number;
+  totalAmount: number;
   items: OrderItem[];
   payment?: Payment;
+  payments?: Payment[];
   cashierId: number;
   cashierName: string;
   shiftId?: number;
@@ -114,7 +118,7 @@ export interface DashboardData {
 
 export interface Setting {
   id: number;
-  key: string;
+  key_name: string;
   value: string;
   description?: string;
   updatedAt: string;
@@ -132,7 +136,9 @@ export interface PaymentMethod {
   id: number;
   method: string;
   enabled: boolean;
+  is_active?: number; // Add is_active
   config?: Record<string, string>;
+  configs?: any[]; // Add configs as array for API
 }
 
 export interface SalesReport {

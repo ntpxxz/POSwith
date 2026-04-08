@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -46,37 +46,42 @@ export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen bg-pos-bg-primary overflow-hidden">
+    <div className="flex h-screen bg-pos-bg-primary overflow-hidden font-body selection:bg-pos-accent-primary/20">
       {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarCollapsed ? 72 : 256 }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="flex flex-col bg-pos-bg-surface border-r border-pos-border-default flex-shrink-0"
+        className="flex flex-col bg-[#0f1011] flex-shrink-0 z-20 border-r border-pos-border-default"
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-pos-border-default gap-3">
-          <div className="w-9 h-9 rounded-pos-md bg-pos-accent-primary flex items-center justify-center flex-shrink-0">
+        {/* Logo / Back to POS */}
+        <Link to="/" className="h-16 flex items-center px-4 border-b border-pos-border-default gap-3 shrink-0 hover:bg-white/5 transition-colors cursor-pointer text-decoration-none">
+          <div className="w-9 h-9 rounded-pos-sm bg-pos-accent-primary flex items-center justify-center flex-shrink-0 mt-1 mb-1">
             <Store size={20} className="text-white" />
           </div>
           <AnimatePresence>
             {!sidebarCollapsed && (
-              <motion.span
+              <motion.div
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: 'auto' }}
                 exit={{ opacity: 0, width: 0 }}
-                className="font-display font-bold text-pos-text-primary text-pos-md whitespace-nowrap overflow-hidden"
+                className="whitespace-nowrap overflow-hidden flex flex-col"
               >
-                POS Admin
-              </motion.span>
+                <span className="font-body font-wght-510 text-pos-text-primary text-pos-base leading-none mb-0.5">
+                  Linear POS
+                </span>
+                <span className="font-mono text-pos-nano uppercase tracking-widest text-pos-text-tertiary">
+                  Back to Sales &gt;
+                </span>
+              </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </Link>
 
         {/* Collapse toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="mx-3 mt-3 mb-1 p-2 rounded-pos-md text-pos-text-secondary hover:text-pos-text-primary hover:bg-pos-bg-elevated transition-colors"
+          className="mx-3 mt-4 mb-2 p-2 rounded-pos-md text-pos-text-tertiary hover:text-pos-text-primary hover:bg-white/5 transition-colors flex justify-center"
         >
           {sidebarCollapsed ? <Menu size={18} /> : <X size={18} />}
         </button>
@@ -89,10 +94,9 @@ export default function AdminLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-pos-md transition-all duration-150 group ${
-                  isActive
-                    ? 'bg-pos-accent-primary/15 text-pos-accent-primary'
-                    : 'text-pos-text-secondary hover:text-pos-text-primary hover:bg-pos-bg-elevated'
+                `flex items-center gap-3 px-3 py-2.5 rounded-pos-md transition-all duration-150 group font-body font-medium text-pos-sm ${isActive
+                  ? 'bg-white/10 text-pos-text-primary'
+                  : 'text-pos-text-tertiary hover:text-pos-text-primary hover:bg-white/5'
                 }`
               }
             >
@@ -100,7 +104,7 @@ export default function AdminLayout() {
                 <>
                   <item.icon
                     size={20}
-                    className={`flex-shrink-0 ${isActive ? 'text-pos-accent-primary' : ''}`}
+                    className={`flex-shrink-0 ${isActive ? 'text-pos-text-primary' : ''}`}
                   />
                   <AnimatePresence>
                     {!sidebarCollapsed && (
@@ -108,7 +112,7 @@ export default function AdminLayout() {
                         initial={{ opacity: 0, width: 0 }}
                         animate={{ opacity: 1, width: 'auto' }}
                         exit={{ opacity: 0, width: 0 }}
-                        className="text-pos-sm font-medium whitespace-nowrap overflow-hidden"
+                        className="text-pos-sm whitespace-nowrap overflow-hidden"
                       >
                         {item.label}
                       </motion.span>
@@ -121,10 +125,10 @@ export default function AdminLayout() {
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-4 border-t border-pos-border-default">
+        <div className="px-3 py-4 border-t border-pos-border-default shrink-0">
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-pos-md text-pos-text-secondary hover:text-pos-accent-danger hover:bg-pos-accent-danger/10 transition-colors w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-pos-md text-pos-text-tertiary hover:text-pos-accent-danger hover:bg-white/5 transition-colors w-full font-body font-medium text-pos-sm"
           >
             <LogOut size={20} className="flex-shrink-0" />
             <AnimatePresence>
@@ -133,7 +137,7 @@ export default function AdminLayout() {
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
-                  className="text-pos-sm font-medium whitespace-nowrap overflow-hidden"
+                  className="text-pos-sm whitespace-nowrap overflow-hidden"
                 >
                   Logout
                 </motion.span>
@@ -144,26 +148,29 @@ export default function AdminLayout() {
       </motion.aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top bar */}
-        <header className="h-16 flex items-center justify-between px-6 bg-pos-bg-surface border-b border-pos-border-default flex-shrink-0">
-          <div className="flex items-center gap-2 text-pos-text-secondary">
-            <span className="text-pos-sm">Admin</span>
+        <header className="h-16 flex items-center justify-between px-8 glass-nav shrink-0 z-10 sticky top-0">
+          <div className="flex items-center gap-2 text-pos-text-tertiary">
+            <span className="font-mono text-pos-xs uppercase tracking-widest font-medium bg-white/5 px-2 py-0.5 rounded-pos-sm text-pos-text-secondary border border-white/10">Admin</span>
             <ChevronRight size={14} />
-            <span className="text-pos-sm font-medium text-pos-text-primary">
+            <span className="font-body font-wght-510 text-pos-base text-pos-text-primary tracking-tight">
               {getBreadcrumb(location.pathname)}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-pos-sm text-pos-text-secondary">{user?.name}</span>
-            <span className="px-2 py-0.5 rounded-full text-pos-xs font-medium bg-pos-accent-primary/20 text-pos-accent-primary">
+          <div className="flex items-center gap-4">
+            <span className="font-mono text-pos-xs font-semibold text-pos-text-secondary uppercase tracking-widest">{user?.name}</span>
+            <div className="w-8 h-8 rounded-pos-pill bg-white/10 border border-white/20 flex items-center justify-center text-pos-text-primary text-[11px] font-bold">
+              {user?.name?.charAt(0)}
+            </div>
+            <span className="font-mono px-2 py-0.5 rounded-pos-pill text-pos-nano font-bold uppercase tracking-widest bg-pos-accent-primary/10 text-pos-accent-primary border border-pos-accent-primary/20">
               {user?.role}
             </span>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth bg-pos-bg-primary">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

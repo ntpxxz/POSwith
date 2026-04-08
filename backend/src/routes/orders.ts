@@ -28,8 +28,8 @@ function generateOrderNumber(): string {
 // POST / — create order
 router.post('/', authenticate, (req: AuthRequest, res: Response) => {
   try {
-    const { items } = req.body;
-    console.log('Backend creating order with items:', JSON.stringify(items, null, 2));
+    const { items, discountType, discountValue } = req.body;
+    console.log('Backend creating order:', { items, discountType, discountValue });
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: 'items array is required and must not be empty' });
@@ -52,12 +52,13 @@ router.post('/', authenticate, (req: AuthRequest, res: Response) => {
       );
 
       for (const item of items) {
+        const productId = item.productId || item.product_id;
         const product = db.prepare(
           'SELECT id, name, price FROM products WHERE id = ? AND is_active = 1'
-        ).get(item.product_id) as { id: number; name: string; price: number } | undefined;
+        ).get(productId) as { id: number; name: string; price: number } | undefined;
 
         if (!product) {
-          throw new Error(`Product with id ${item.product_id} not found or inactive`);
+          throw new Error(`Product with id ${productId} not found or inactive`);
         }
 
         const quantity = item.quantity || 1;
@@ -67,15 +68,37 @@ router.post('/', authenticate, (req: AuthRequest, res: Response) => {
         insertItem.run(orderId, product.id, product.name, product.price, quantity, itemTotal);
       }
 
+      // Handle Discount
+      let discountAmount = 0;
+      if (discountType && discountValue != null && discountValue > 0) {
+        if (discountType === 'PERCENT') {
+          discountAmount = Math.round(totalAmount * (discountValue / 100) * 100) / 100;
+        } else {
+          discountAmount = discountValue;
+        }
+
+        db.prepare(
+          'INSERT INTO discounts (order_id, type, value, created_by) VALUES (?, ?, ?, ?)'
+        ).run(orderId, discountType, discountValue, req.user!.id);
+      }
+
+      const netAmount = Math.max(0, Math.round((totalAmount - discountAmount) * 100) / 100);
+
       // Update order totals
       db.prepare(
-        'UPDATE orders SET total_amount = ?, net_amount = ?, updated_at = datetime(\'now\',\'localtime\') WHERE id = ?'
-      ).run(totalAmount, totalAmount, orderId);
+        'UPDATE orders SET total_amount = ?, discount_amount = ?, net_amount = ?, updated_at = datetime(\'now\',\'localtime\') WHERE id = ?'
+      ).run(totalAmount, discountAmount, netAmount, orderId);
 
       // Audit log
       db.prepare(
         'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-      ).run('CREATE_ORDER', req.user!.id, 'order', orderId, JSON.stringify({ order_number: orderNumber, total_amount: totalAmount, items_count: items.length }));
+      ).run('CREATE_ORDER', req.user!.id, 'order', orderId, JSON.stringify({
+        order_number: orderNumber,
+        total_amount: totalAmount,
+        discount_amount: discountAmount,
+        net_amount: netAmount,
+        items_count: items.length
+      }));
 
       return orderId;
     });
@@ -94,7 +117,15 @@ router.post('/', authenticate, (req: AuthRequest, res: Response) => {
       netTotal: orderData.net_amount,
       createdAt: orderData.created_at,
       updatedAt: orderData.updated_at,
-      items: orderItems
+      items: orderItems.map((item: any) => ({
+        id: item.id,
+        orderId: item.order_id,
+        productId: item.product_id,
+        productName: item.name_snapshot,
+        unitPrice: item.price_snapshot,
+        quantity: item.quantity,
+        totalPrice: item.total
+      }))
     };
 
     res.status(201).json(formattedOrder);
@@ -181,8 +212,21 @@ router.get('/:id', authenticate, (req: AuthRequest, res: Response) => {
       discountAmount: orderData.discount_amount,
       netTotal: orderData.net_amount,
       createdAt: orderData.created_at,
-      items,
-      payments,
+      items: items.map((item: any) => ({
+        id: item.id,
+        productId: item.product_id,
+        productName: item.name_snapshot,
+        unitPrice: item.price_snapshot,
+        quantity: item.quantity,
+        totalPrice: item.total
+      })),
+      payments: payments.map((p: any) => ({
+        id: p.id,
+        amount: p.amount,
+        method: p.method,
+        status: p.status,
+        createdAt: p.created_at
+      })),
       discounts
     };
 
@@ -295,6 +339,66 @@ router.post('/:id/discount', authenticate, (req: AuthRequest, res: Response) => 
     res.json({ order: updated });
   } catch (err) {
     console.error('Apply discount error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /:id/receipt — data for printing receipt
+router.get('/:id/receipt', authenticate, (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const orderData = db.prepare(`
+      SELECT o.*, u.name as cashier_name 
+      FROM orders o 
+      LEFT JOIN users u ON o.created_by = u.id 
+      WHERE o.id = ?
+    `).get(Number(id)) as any;
+
+    if (!orderData) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(Number(id));
+    const payments = db.prepare('SELECT * FROM payments WHERE order_id = ?').all(Number(id));
+
+    // Get shop settings
+    const settings = db.prepare("SELECT key_name, value FROM settings WHERE key_name IN ('SHOP_NAME', 'RECEIPT_FOOTER', 'TAX_PERCENT')").all() as any[];
+    const shopInfo: any = {};
+    settings.forEach(s => { shopInfo[s.key_name] = s.value; });
+
+    const formattedOrder = {
+      id: orderData.id,
+      orderNumber: orderData.order_number,
+      status: orderData.status,
+      totalAmount: orderData.total_amount,
+      discountAmount: orderData.discount_amount,
+      netTotal: orderData.net_amount,
+      createdAt: orderData.created_at,
+      items: items.map((item: any) => ({
+        id: item.id,
+        productId: item.product_id,
+        productName: item.name_snapshot,
+        unitPrice: item.price_snapshot,
+        quantity: item.quantity,
+        totalPrice: item.total
+      })),
+      payments: payments.map((p: any) => ({
+        id: p.id,
+        amount: p.amount,
+        method: p.method,
+        status: p.status,
+        createdAt: p.created_at
+      })),
+      cashierName: orderData.cashier_name,
+      shopName: shopInfo['SHOP_NAME'] || 'Sandwich & Coffee',
+      receiptFooter: shopInfo['RECEIPT_FOOTER'] || 'Thank you for your business!',
+      taxPercent: Number(shopInfo['TAX_PERCENT'] || 0)
+    };
+
+    res.json(formattedOrder);
+  } catch (err) {
+    console.error('Get receipt error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

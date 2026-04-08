@@ -1,27 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Search,
-    ShoppingCart,
-    Trash2,
-    Plus,
-    Minus,
-    X,
-    Wallet,
-    Banknote,
-    QrCode,
-    Clock,
-    User as UserIcon,
-    LogOut,
-    Settings,
-    ChevronRight
-} from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, Settings, LogOut, Coffee } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getProducts, createOrder } from '@/lib/api';
+import { getProducts } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
-import type { Product, CartItemData } from '@/types';
+import type { Product } from '@/types';
 
 function formatPrice(n: number): string {
     return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -32,7 +17,7 @@ export default function POSPage() {
     const navigate = useNavigate();
     const {
         cart, addToCart, updateQuantity, removeFromCart, clearCart,
-        subtotal, discount, setDiscount, discountAmount, netTotal
+        subtotal, discount, discountAmount, netTotal
     } = useCart();
 
     const [products, setProducts] = useState<Product[]>([]);
@@ -45,10 +30,8 @@ export default function POSPage() {
             setLoading(true);
             try {
                 const res = await getProducts();
-                console.log('Frontend received products:', res);
                 setProducts(Array.isArray(res) ? res : []);
             } catch (err) {
-                console.error('Fetch products error:', err);
                 toast.error('Failed to load products');
             } finally {
                 setLoading(false);
@@ -65,96 +48,84 @@ export default function POSPage() {
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
             if (!p) return false;
-            const name = p.name || '';
-            const cat = p.category || '';
-            const matchSearch = name.toLowerCase().includes(search.toLowerCase());
-            const matchCategory = activeCategory === 'All' || cat === activeCategory;
+            const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase());
+            const matchCategory = activeCategory === 'All' || p.category === activeCategory;
             return matchSearch && matchCategory;
         });
     }, [products, search, activeCategory]);
 
     const handleProceedToCheckout = () => {
         if (cart.length === 0) {
-            toast.error('Cart is empty');
+            toast.error('Manifest is empty');
             return;
         }
         navigate('/checkout');
     };
 
     return (
-        <div className="flex h-screen bg-pos-bg-primary overflow-hidden">
-            {/* Sidebar Navigation */}
-            <aside className="w-20 bg-pos-bg-surface border-r border-pos-border-default flex flex-col items-center py-6 gap-6 no-print">
-                <div className="w-12 h-12 rounded-pos-lg bg-pos-accent-primary flex items-center justify-center shadow-pos-float text-white">
-                    <ShoppingCart size={24} />
+        <div className="flex h-screen bg-pos-bg-primary font-body selection:bg-pos-accent-primary/20 text-pos-text-primary overflow-hidden">
+            {/* Minimal/Raw Sidebar */}
+            <aside className="w-20 border-r border-pos-border-default flex flex-col items-center py-8 gap-8 bg-pos-bg-surface z-20 shrink-0">
+                <div className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center text-pos-text-primary hover:bg-white/10 transition-colors cursor-pointer">
+                    <Coffee size={20} strokeWidth={2.5} />
                 </div>
 
-                <nav className="flex-1 flex flex-col gap-4">
-                    <button className="p-3 rounded-pos-md bg-pos-bg-elevated text-pos-accent-primary">
-                        <ShoppingCart size={24} />
+                <nav className="flex-1 flex flex-col gap-6 w-full items-center pt-8">
+                    <button className="w-12 h-12 flex justify-center items-center rounded-pos-md bg-white/5 border border-white/10 text-pos-text-primary">
+                        <ShoppingCart size={20} />
                     </button>
                     {user?.role === 'ADMIN' && (
                         <button
                             onClick={() => navigate('/admin')}
-                            className="p-3 rounded-pos-md text-pos-text-secondary hover:bg-pos-bg-elevated hover:text-pos-text-primary transition-colors"
+                            className="p-3 text-pos-text-tertiary hover:text-pos-text-primary transition-colors w-12 h-12 flex justify-center items-center"
                         >
-                            <Settings size={24} />
+                            <Settings size={20} />
                         </button>
                     )}
                 </nav>
 
-                <div className="flex flex-col gap-4 mt-auto">
-                    <button
-                        onClick={logout}
-                        className="p-3 rounded-pos-md text-pos-text-secondary hover:bg-pos-accent-danger/10 hover:text-pos-accent-danger transition-colors"
-                    >
-                        <LogOut size={24} />
-                    </button>
-                </div>
+                <button
+                    onClick={logout}
+                    className="p-3 text-pos-text-tertiary hover:text-pos-accent-danger transition-colors w-12 h-12 flex justify-center items-center"
+                >
+                    <LogOut size={20} />
+                </button>
             </aside>
 
-            {/* Main Content (Product Grid) */}
-            <main className="flex-1 flex flex-col min-w-0 bg-pos-bg-primary">
-                {/* Header */}
-                <header className="h-16 flex items-center justify-between px-6 border-b border-pos-border-default bg-pos-bg-surface">
-                    <div className="flex items-center gap-4">
-                        <h1 className="font-display font-bold text-pos-lg text-pos-text-primary">
-                            Sandwich & Coffee
+            {/* Main Editorial Content */}
+            <main className="flex-1 flex flex-col min-w-0 bg-pos-bg-primary overflow-hidden">
+                {/* High Editorial Header */}
+                <header className="px-10 pt-12 pb-6 border-b border-pos-border-default flex justify-between items-end shrink-0 z-10 bg-pos-bg-primary">
+                    <div>
+                        <h2 className="font-mono text-pos-xs text-pos-text-tertiary uppercase mb-2">
+                            Terminal 01 // {user?.name}
+                        </h2>
+                        <h1 className="font-display font-wght-510 text-pos-xl leading-none text-pos-text-primary">
+                            {user?.shopName || 'The Daily Grind'}
                         </h1>
-                        <div className="h-4 w-[1px] bg-pos-border-default" />
-                        <div className="flex items-center gap-2 text-pos-text-secondary text-pos-sm">
-                            <Clock size={14} />
-                            <span>{new Date().toLocaleTimeString()}</span>
-                        </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="relative">
-                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-pos-text-secondary" />
-                            <input
-                                type="text"
-                                placeholder="Search menu..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-10 pr-4 py-2 bg-pos-bg-primary border border-pos-border-default rounded-pos-full text-pos-sm focus:outline-none focus:border-pos-accent-primary transition-colors w-64"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-pos-full bg-pos-bg-elevated border border-pos-border-default">
-                            <UserIcon size={14} className="text-pos-accent-primary" />
-                            <span className="text-pos-xs font-medium">{user?.name}</span>
-                        </div>
+                    <div className="relative w-72">
+                        <Search size={16} className="absolute left-3 bottom-3 text-pos-text-tertiary" />
+                        <input
+                            type="text"
+                            placeholder="Find provision..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-pos-border-default rounded-pos-md text-pos-sm font-body focus:outline-none focus:border-pos-border-focus placeholder:text-pos-text-tertiary transition-colors"
+                        />
                     </div>
                 </header>
 
-                {/* Categories */}
-                <div className="px-6 py-4 flex gap-2 overflow-x-auto no-scrollbar border-b border-pos-border-default bg-pos-bg-primary">
+                {/* Taxonomy Filter */}
+                <div className="px-10 py-6 flex gap-4 overflow-x-auto no-scrollbar shrink-0">
                     {categories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
-                            className={`px-6 py-2 rounded-pos-full text-pos-sm font-medium transition-all whitespace-nowrap ${activeCategory === cat
-                                ? 'bg-pos-accent-primary text-white shadow-pos-float'
-                                : 'bg-pos-bg-surface text-pos-text-secondary border border-pos-border-default hover:border-pos-text-disabled'
+                            className={`px-3 py-1 font-body text-pos-sm tracking-wide transition-all border rounded-pos-pill whitespace-nowrap ${activeCategory === cat
+                                ? 'bg-white/10 border-white/20 text-pos-text-primary'
+                                : 'bg-transparent border-transparent text-pos-text-tertiary hover:bg-white/5 hover:border-white/10'
                                 }`}
                         >
                             {cat}
@@ -162,47 +133,49 @@ export default function POSPage() {
                     ))}
                 </div>
 
-                {/* Product Grid */}
-                <div className="flex-1 overflow-y-auto p-6 scroll-smooth h-screen">
+                {/* Product Masonry/Grid */}
+                <div className="flex-1 overflow-y-auto px-10 pb-12 pt-2 scroll-smooth">
                     {loading ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            {[...Array(10)].map((_, i) => (
-                                <div key={i} className="aspect-[4/5] bg-pos-bg-surface rounded-pos-lg animate-pulse" />
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {[...Array(8)].map((_, i) => (
+                                <div key={i} className="aspect-[4/3] bg-white/5 animate-pulse border border-white/10 rounded-pos-lg" />
                             ))}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             <AnimatePresence>
-                                {filteredProducts.map(product => (
+                                {filteredProducts.map((product, idx) => (
                                     <motion.button
                                         layout
                                         key={product.id}
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.9 }}
-                                        whileTap={{ scale: 0.96 }}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ delay: idx * 0.03, duration: 0.3 }}
                                         onClick={() => addToCart(product)}
-                                        className="flex flex-col bg-pos-bg-surface border border-pos-border-default rounded-pos-lg overflow-hidden hover:border-pos-accent-primary transition-colors group relative"
+                                        className="group text-left bg-white/5 hover:bg-white/10 border border-pos-border-default transition-colors p-4 rounded-pos-lg flex flex-col justify-between aspect-[4/3] relative overflow-hidden"
                                     >
-                                        <div className="aspect-square bg-pos-bg-elevated overflow-hidden">
-                                            {product.image ? (
-                                                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-pos-text-disabled">
-                                                    <ShoppingCart size={32} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="p-4 text-left flex-1 flex flex-col justify-between h-full min-h-[100px]">
-                                            <div>
-                                                <p className="text-pos-xs text-pos-accent-info font-medium mb-1">{product.category}</p>
-                                                <h3 className="text-pos-sm font-semibold text-pos-text-primary line-clamp-2 leading-tight h-10">{product.name}</h3>
-                                            </div>
-                                            <p className="font-display font-bold text-pos-lg text-pos-accent-primary mt-2">
-                                                ฿{formatPrice(product.price)}
+                                        <div className="flex justify-between items-start w-full relative z-10">
+                                            <p className="text-pos-xs bg-white/10 rounded-pos-sm px-2 py-0.5 border border-white/10 text-pos-text-secondary">
+                                                {product.category}
                                             </p>
+                                            <span className="font-mono text-pos-sm font-semibold text-pos-text-primary absolute top-4 right-4">
+                                                ฿{product.price}
+                                            </span>
                                         </div>
-                                        {/* Add Badge if needed */}
+
+                                        <div className="relative z-10 mt-auto">
+                                            <h3 className="font-body font-semibold text-pos-base text-pos-text-primary">
+                                                {product.name}
+                                            </h3>
+                                        </div>
+
+                                        {/* Minimal background representation */}
+                                        {product.image ? (
+                                            <img src={product.image} alt="" className="absolute top-1/4 right-0 w-32 h-32 object-cover opacity-[0.03] group-hover:opacity-[0.06] transition-opacity mix-blend-screen" />
+                                        ) : (
+                                            <Coffee className="absolute -bottom-4 -right-4 w-24 h-24 text-pos-border-default opacity-20 transition-transform" />
+                                        )}
                                     </motion.button>
                                 ))}
                             </AnimatePresence>
@@ -211,29 +184,29 @@ export default function POSPage() {
                 </div>
             </main>
 
-            {/* Cart (Right Panel) */}
-            <aside className="w-[400px] bg-pos-bg-surface border-l border-pos-border-default flex flex-col no-print">
-                <div className="p-6 border-b border-pos-border-default flex justify-between items-center bg-pos-bg-elevated/30">
-                    <div className="flex items-center gap-2">
-                        <ShoppingCart size={20} className="text-pos-accent-primary" />
-                        <h2 className="font-display font-bold text-pos-md text-pos-text-primary">Current Order</h2>
+            {/* Editorial Invoice Panel (Cart) */}
+            <aside className="w-[380px] bg-pos-bg-surface border-l border-pos-border-default flex flex-col z-20 shrink-0">
+                <div className="p-6 border-b border-pos-border-default bg-pos-bg-surface text-pos-text-primary">
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <h2 className="font-body font-wght-510 text-pos-lg leading-none">Manifest</h2>
+                            <p className="font-mono text-pos-xs text-pos-text-tertiary uppercase mt-2">DRAFT / {new Date().toLocaleDateString()}</p>
+                        </div>
+                        <button
+                            onClick={clearCart}
+                            disabled={cart.length === 0}
+                            className="p-2 opacity-50 hover:opacity-100 transition-opacity disabled:opacity-20"
+                        >
+                            <Trash2 size={20} />
+                        </button>
                     </div>
-                    <button
-                        onClick={clearCart}
-                        disabled={cart.length === 0}
-                        className="p-2 text-pos-text-secondary hover:text-pos-accent-danger disabled:opacity-30 transition-colors"
-                    >
-                        <Trash2 size={18} />
-                    </button>
                 </div>
 
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <AnimatePresence initial={false}>
+                <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+                    <AnimatePresence>
                         {cart.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-pos-text-disabled py-12">
-                                <ShoppingCart size={48} className="mb-4 opacity-20" />
-                                <p className="text-pos-sm">Cart is empty</p>
+                            <div className="h-full flex items-center justify-center text-pos-text-tertiary">
+                                <p className="font-body text-pos-sm text-center">No provisions added to the manifest yet.</p>
                             </div>
                         ) : (
                             cart.map(item => (
@@ -242,32 +215,27 @@ export default function POSPage() {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    className="flex items-center gap-3 bg-pos-bg-primary/50 p-3 rounded-pos-md border border-pos-border-default"
+                                    className="flex flex-col gap-2 pb-4 border-b border-pos-border-default border-dashed"
                                 >
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-pos-sm font-medium text-pos-text-primary truncate">{item.name}</h4>
-                                        <p className="text-pos-xs text-pos-text-secondary">฿{formatPrice(item.price)}</p>
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-body font-semibold text-pos-sm text-pos-text-primary leading-tight pr-4">
+                                            {item.name}
+                                        </h4>
+                                        <p className="font-mono text-pos-sm font-semibold">฿{(item.price * item.quantity).toLocaleString()}</p>
                                     </div>
-                                    <div className="flex items-center gap-3 bg-pos-bg-surface rounded-pos-full p-1 border border-pos-border-default">
-                                        <button
-                                            onClick={() => updateQuantity(item.productId, -1)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-pos-bg-elevated text-pos-text-primary transition-colors"
-                                        >
-                                            <Minus size={14} />
-                                        </button>
-                                        <span className="text-pos-sm font-mono font-bold min-w-[20px] text-center">{item.quantity}</span>
-                                        <button
-                                            onClick={() => updateQuantity(item.productId, 1)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-pos-bg-elevated text-pos-text-primary transition-colors"
-                                        >
-                                            <Plus size={14} />
-                                        </button>
-                                    </div>
-                                    <div className="text-right min-w-[70px]">
-                                        <p className="text-pos-sm font-bold text-pos-text-primary">฿{formatPrice(item.price * item.quantity)}</p>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <div className="flex items-center gap-3 border border-white/10 rounded-pos-md bg-white/5 px-2 py-1 w-fit">
+                                            <button onClick={() => updateQuantity(item.productId, -1)} className="text-pos-text-tertiary hover:text-pos-text-primary">
+                                                <Minus size={12} strokeWidth={2.5} />
+                                            </button>
+                                            <span className="font-mono text-pos-xs font-semibold w-4 text-center">{item.quantity}</span>
+                                            <button onClick={() => updateQuantity(item.productId, 1)} className="text-pos-text-tertiary hover:text-pos-text-primary">
+                                                <Plus size={12} strokeWidth={2.5} />
+                                            </button>
+                                        </div>
                                         <button
                                             onClick={() => removeFromCart(item.productId)}
-                                            className="text-pos-xs text-pos-accent-danger hover:underline mt-1"
+                                            className="font-mono text-pos-xs text-pos-text-tertiary hover:text-pos-accent-danger transition-colors"
                                         >
                                             Remove
                                         </button>
@@ -278,63 +246,36 @@ export default function POSPage() {
                     </AnimatePresence>
                 </div>
 
-                {/* Summary & Checkout */}
-                <div className="p-6 bg-pos-bg-elevated/20 border-t border-pos-border-default space-y-4">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-pos-sm text-pos-text-secondary">
+                <div className="p-6 bg-pos-bg-surface border-t border-pos-border-default">
+                    <div className="space-y-2 mb-6">
+                        <div className="flex justify-between font-mono text-pos-xs text-pos-text-secondary uppercase tracking-wide">
                             <span>Subtotal</span>
-                            <span>฿{formatPrice(subtotal)}</span>
+                            <span>฿{subtotal.toLocaleString()}</span>
                         </div>
-
-                        {/* Discount Section */}
-                        <div className="flex items-center justify-between text-pos-sm">
-                            <div className="flex items-center gap-2">
-                                <span className="text-pos-text-secondary">Discount</span>
-                                {discount.value > 0 && (
-                                    <span className="px-1.5 py-0.5 rounded bg-pos-accent-primary/20 text-pos-accent-primary text-[10px] font-bold">
-                                        {discount.type === 'PERCENT' ? `${discount.value}%` : 'FIXED'}
-                                    </span>
-                                )}
+                        {discount.value > 0 && (
+                            <div className="flex justify-between font-mono text-pos-xs text-pos-accent-danger uppercase tracking-wide">
+                                <span>Relief</span>
+                                <span>-฿{discountAmount.toLocaleString()}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className={discount.value > 0 ? 'text-pos-accent-danger' : 'text-pos-text-secondary'}>
-                                    -฿{formatPrice(discountAmount)}
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        const val = prompt('Enter discount value (number only):', discount.value.toString());
-                                        if (val !== null && !isNaN(Number(val))) {
-                                            const type = confirm('Is this a Percentage? (OK = %, Cancel = Fixed)') ? 'PERCENT' : 'FIXED';
-                                            setDiscount({ type, value: Number(val) });
-                                        }
-                                    }}
-                                    className="p-1 rounded hover:bg-pos-bg-elevated text-pos-accent-info"
-                                >
-                                    <Settings size={14} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-pos-border-default flex justify-between items-end">
-                            <span className="text-pos-base font-medium text-pos-text-primary">Net Total</span>
-                            <span className="text-pos-3xl font-display font-bold text-pos-accent-primary leading-none">
-                                ฿{formatPrice(netTotal)}
+                        )}
+                        <div className="pt-4 mt-2 border-t border-pos-border-default flex justify-between items-baseline">
+                            <span className="font-body font-semibold text-pos-base">Total Due</span>
+                            <span className="font-mono text-pos-xl font-bold">
+                                ฿{netTotal.toLocaleString()}
                             </span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3">
-                        <button
-                            onClick={handleProceedToCheckout}
-                            disabled={cart.length === 0}
-                            className="flex flex-col items-center justify-center gap-1 h-20 bg-pos-accent-primary text-white rounded-pos-lg hover:shadow-pos-float transition-all disabled:opacity-30 disabled:cursor-not-allowed font-bold"
-                        >
-                            <Banknote size={24} />
-                            <span className="text-pos-md uppercase tracking-widest">Proceed to Checkout</span>
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleProceedToCheckout}
+                        disabled={cart.length === 0}
+                        className="w-full py-3 bg-pos-accent-primary text-white rounded-pos-md font-body font-medium text-pos-sm transition-all hover:bg-pos-accent-hover disabled:opacity-40 disabled:hover:bg-pos-accent-primary flex justify-center items-center gap-2"
+                    >
+                        Issue Tender
+                    </button>
                 </div>
             </aside>
         </div>
     );
 }
+
