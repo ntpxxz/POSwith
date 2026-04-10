@@ -143,54 +143,54 @@ export function updateUser(id: number, data: Partial<import('@/types').User & { 
 
 // ─── Admin: Settings ────────────────────────────────────────────
 export function getSettings() {
-  return get<import('@/types').Setting[]>('/admin/settings');
+  return get<{ settings: import('@/types').Setting[] }>('/admin/settings');
 }
 
 export function updateSettings(data: { key_name: string; value: string }[]) {
-  return put<import('@/types').Setting[]>('/admin/settings', data);
+  return put<{ settings: import('@/types').Setting[] }>('/admin/settings', { settings: data });
 }
 
 // ─── Admin: Payment Methods ─────────────────────────────────────
 export function getPaymentMethods() {
-  return get<import('@/types').PaymentMethod[]>('/admin/payment-methods');
+  return get<{ payment_methods: import('@/types').PaymentMethod[] }>('/admin/payment-methods');
 }
 
 export function updatePaymentMethod(id: number, data: Partial<import('@/types').PaymentMethod>) {
-  return put<import('@/types').PaymentMethod>(`/admin/payment-methods/${id}`, data);
+  return put<{ payment_method: import('@/types').PaymentMethod }>(`/admin/payment-methods/${id}`, data);
 }
 
 // ─── Admin: Shifts ──────────────────────────────────────────────
 export function openShift(data: { openingBalance: number }) {
-  return post<import('@/types').Shift>('/shifts/open', data);
+  return post<{ shift: import('@/types').Shift }>('/shifts/open', { opening_cash: data.openingBalance });
 }
 
 export function closeShift(data: { closingBalance: number }) {
-  return post<import('@/types').Shift>('/shifts/close', data);
+  return post<{ shift: import('@/types').Shift }>('/shifts/close', { closing_cash: data.closingBalance });
 }
 
 export function getShifts(params?: { from?: string; to?: string }) {
   const query = params
     ? '?' + new URLSearchParams(params as Record<string, string>).toString()
     : '';
-  return get<import('@/types').Shift[]>(`/admin/shifts${query}`);
+  return get<{ shifts: import('@/types').Shift[] }>(`/admin/shifts${query}`);
 }
 
 // ─── Admin: Cash Adjustments ────────────────────────────────────
 export function getCashAdjustments(shiftId?: number) {
-  const query = shiftId ? `?shiftId=${shiftId}` : '';
-  return get<import('@/types').CashAdjustment[]>(`/admin/cash-adjustments${query}`);
+  const query = shiftId ? `?shift_id=${shiftId}` : '';
+  return get<{ cash_adjustments: import('@/types').CashAdjustment[] }>(`/admin/cash-adjustments${query}`);
 }
 
-export function createCashAdjustment(data: { type: 'IN' | 'OUT'; amount: number; reason: string }) {
-  return post<import('@/types').CashAdjustment>('/admin/cash-adjustments', data);
+export function createCashAdjustment(data: { shift_id?: number; type: 'IN' | 'OUT'; amount: number; reason: string }) {
+  return post<{ cash_adjustment: import('@/types').CashAdjustment }>('/admin/cash-adjustments', data);
 }
 
 // ─── Admin: Audit Logs ──────────────────────────────────────────
-export function getAuditLogs(params?: { from?: string; to?: string; action?: string }) {
+export function getAuditLogs(params?: { page?: string; limit?: string; action?: string; entity?: string }) {
   const query = params
     ? '?' + new URLSearchParams(params as Record<string, string>).toString()
     : '';
-  return get<import('@/types').AuditLog[]>(`/admin/audit-logs${query}`);
+  return get<{ audit_logs: import('@/types').AuditLog[]; pagination?: any }>(`/admin/audit-logs${query}`);
 }
 
 // ─── Admin: Reports ─────────────────────────────────────────────

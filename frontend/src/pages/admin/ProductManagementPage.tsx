@@ -110,9 +110,9 @@ export default function ProductManagementPage() {
         name: form.name.trim(),
         category: form.category,
         price: Number(form.price),
-        sort_order: Number(form.sort_order) || 0,
-        image_url: form.image_url.trim(),
-        is_active: form.is_active ? 1 : 0,
+        sortOrder: Number(form.sort_order) || 0,
+        image: form.image_url.trim(),
+        active: form.is_active,
       };
 
       if (editingId) {
@@ -149,7 +149,7 @@ export default function ProductManagementPage() {
   const handleToggleActive = async (product: Product) => {
     setTogglingId(product.id);
     try {
-      await updateProduct(product.id, { is_active: product.active ? 0 : 1 });
+      await updateProduct(product.id, { active: !product.active });
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, active: !p.active } : p))
       );
