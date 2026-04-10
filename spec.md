@@ -511,131 +511,218 @@ Admin ควรมีรายงานที่ครอบคลุมกา�
 
 ---
 
-## 7. Core Data Model Summary
+## 7. Database Design (Detailed)
 
-### users
+### 7.1 users
 
-* id
+* id (PK)
 * name
-* email
+* email (unique)
 * password_hash
-* role
+* role (ADMIN, CASHIER)
 * is_active
 * created_at
 
-### products
+Indexes:
 
-* id
+* email
+
+---
+
+### 7.2 products
+
+* id (PK)
 * name
 * category
 * price
 * is_active
+* sort_order
+* image_url
 * created_at
 * updated_at
 
-### orders
+Indexes:
 
-* id
-* order_number
-* status
+* is_active
+* category
+
+---
+
+### 7.3 orders
+
+* id (PK)
+* order_number (unique)
+* status (PENDING, COMPLETED, CANCELLED, REFUNDED)
 * total_amount
 * discount_amount
 * net_amount
-* created_by
+* created_by (FK users)
 * created_at
 * updated_at
 
-### order_items
+Indexes:
 
-* id
-* order_id
-* product_id
+* order_number (unique)
+* status
+* created_at
+
+---
+
+### 7.4 order_items
+
+* id (PK)
+* order_id (FK orders)
+* product_id (FK products)
 * name_snapshot
 * price_snapshot
 * quantity
 * total
 
-### payments
+Indexes:
 
-* id
 * order_id
-* status
+* product_id
+
+---
+
+### 7.5 payments
+
+* id (PK)
+* order_id (FK orders)
+* status (PENDING, SUCCESS, FAILED)
 * amount
-* method
-* idempotency_key
+* method (CASH, QR, CARD)
+* idempotency_key (unique)
 * reference_code
-* confirmed_by
+* confirmed_by (FK users)
 * confirmed_at
 * created_at
 
-### discounts
+Indexes:
 
-* id
+* order_id
+* status
+* idempotency_key (unique)
+
+Constraint (logical):
+
+* 1 active (PENDING) payment per order
+
+---
+
+### 7.6 discounts
+
+* id (PK)
 * order_id
 * type
 * value
 * created_by
 * created_at
 
-### refunds
+Indexes:
 
-* id
+* order_id
+
+---
+
+### 7.7 refunds
+
+* id (PK)
 * order_id
 * amount
 * reason
 * created_by
 * created_at
 
-### payment_methods
+Indexes:
 
-* id
-* code
+* order_id
+
+---
+
+### 7.8 payment_methods
+
+* id (PK)
+* code (QR, CASH, CARD)
 * name
 * is_active
 
-### payment_configs
+Indexes:
 
-* id
-* method_id
+* code (unique)
+
+---
+
+### 7.9 payment_configs
+
+* id (PK)
+* method_id (FK payment_methods)
 * key_name
 * value
 * updated_at
 
-### settings
+Unique constraint:
 
-* id
-* key_name
+* (method_id, key_name)
+
+---
+
+### 7.10 settings
+
+* id (PK)
+* key_name (unique)
 * value
 * updated_at
 
-### cash_adjustments
+---
 
-* id
-* amount
-* type
-* reason
-* created_by
-* created_at
+### 7.11 shifts
 
-### shifts
-
-* id
+* id (PK)
 * opened_by
 * closed_by
 * opening_cash
 * closing_cash
-* status
+* status (OPEN, CLOSED)
 * opened_at
 * closed_at
 
-### audit_logs
+Indexes:
 
-* id
+* status
+* opened_at
+
+---
+
+### 7.12 cash_adjustments
+
+* id (PK)
+* amount
+* type (IN, OUT)
+* reason
+* created_by
+* created_at
+
+Indexes:
+
+* created_at
+
+---
+
+### 7.13 audit_logs
+
+* id (PK)
 * action
 * user_id
 * entity
 * entity_id
-* payload
+* payload (JSON)
+* created_at
+
+Indexes:
+
+* user_id
+* entity
 * created_at
 
 ---
