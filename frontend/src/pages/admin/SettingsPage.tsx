@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Save,
-    RotateCcw,
     Loader2,
     Store,
     CreditCard,
     QrCode,
-    Globe,
-    Plus,
-    Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getSettings, updateSettings, getPaymentMethods, updatePaymentMethod } from '@/lib/api';
@@ -31,8 +27,8 @@ export default function SettingsPage() {
             ]);
             // The API returns { settings: [...] } and { payment_methods: [...] }
             // Need to normalize based on how they appear in lib/api.ts
-            setSettings((settingsRes as any).settings || []);
-            setPaymentMethods((pmRes as any).payment_methods || []);
+            setSettings(settingsRes || []);
+            setPaymentMethods(pmRes || []);
         } catch (err: any) {
             toast.error(err?.message || 'Failed to load settings');
         } finally {
@@ -116,8 +112,31 @@ export default function SettingsPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <Loader2 className="w-8 h-8 text-pos-accent-primary animate-spin" />
+            <div className="max-w-4xl space-y-10 pb-20 animate-pulse">
+                {[0, 1].map((s) => (
+                    <div key={s} className="space-y-6">
+                        {/* Section header */}
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-pos-lg bg-white/10" />
+                            <div className="space-y-2">
+                                <div className="h-4 w-32 bg-white/10 rounded" />
+                                <div className="h-3 w-48 bg-white/5 rounded" />
+                            </div>
+                        </div>
+                        {/* Field rows */}
+                        <div className="space-y-4">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="flex items-center justify-between py-3 border-b border-pos-border-default">
+                                    <div className="space-y-1.5">
+                                        <div className="h-3.5 w-28 bg-white/10 rounded" />
+                                        <div className="h-2.5 w-44 bg-white/5 rounded" />
+                                    </div>
+                                    <div className="h-9 w-48 bg-white/10 rounded-pos-md" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
         );
     }

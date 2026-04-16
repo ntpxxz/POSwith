@@ -1,13 +1,13 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../db/schema.js';
+import prisma from '../db/prisma.js';
 import { authenticate, AuthRequest, JWT_SECRET } from '../middleware/auth.js';
 
 const router = Router();
 
 // POST /login
-router.post('/login', (req: AuthRequest, res: Response) => {
+router.post('/login', async (req: AuthRequest, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -16,21 +16,19 @@ router.post('/login', (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const user = db.prepare(
-      'SELECT id, name, email, password_hash, role, is_active FROM users WHERE email = ?'
-    ).get(email) as { id: number; name: string; email: string; password_hash: string; role: string; is_active: number } | undefined;
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
 
-    if (!user.is_active) {
+    if (!user.isActive) {
       res.status(401).json({ error: 'Account is deactivated' });
       return;
     }
 
-    const valid = bcrypt.compareSync(password, user.password_hash);
+    const valid = bcrypt.compareSync(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
@@ -42,10 +40,9 @@ router.post('/login', (req: AuthRequest, res: Response) => {
       { expiresIn: '24h' }
     );
 
-    // Audit log
-    db.prepare(
-      'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-    ).run('LOGIN', user.id, 'user', user.id, JSON.stringify({ email: user.email }));
+    await prisma.auditLog.create({
+      data: { action: 'LOGIN', userId: user.id, entity: 'user', entityId: user.id, payload: { email: user.email } },
+    });
 
     res.json({
       token,
@@ -58,12 +55,10 @@ router.post('/login', (req: AuthRequest, res: Response) => {
 });
 
 // POST /logout
-router.post('/logout', authenticate, (req: AuthRequest, res: Response) => {
-  // Stateless JWT — just acknowledge
-  db.prepare(
-    'INSERT INTO audit_logs (action, user_id, entity, entity_id) VALUES (?, ?, ?, ?)'
-  ).run('LOGOUT', req.user!.id, 'user', req.user!.id);
-
+router.post('/logout', authenticate, async (req: AuthRequest, res: Response) => {
+  await prisma.auditLog.create({
+    data: { action: 'LOGOUT', userId: req.user!.id, entity: 'user', entityId: req.user!.id },
+  });
   res.json({ message: 'Logged out successfully' });
 });
 

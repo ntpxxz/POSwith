@@ -8,6 +8,7 @@ import orderRoutes from './routes/orders.js';
 import paymentRoutes from './routes/payments.js';
 import adminRoutes from './routes/admin.js';
 import printRoutes from './routes/print.js';
+import healthRoutes from './routes/health.js';
 import { authenticate } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', authenticate, orderRoutes);
@@ -36,11 +38,6 @@ app.use('/api/admin', authenticate, adminRoutes);
 
 // Static files for product images if any
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // Error handling for debugging
 process.on('uncaughtException', (err) => {

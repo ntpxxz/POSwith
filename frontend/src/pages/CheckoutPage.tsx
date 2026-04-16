@@ -28,10 +28,21 @@ export default function CheckoutPage() {
             if (!orderInfo?.id) return;
             const toastId = toast.loading('Sending to physical printer...');
             await requestPrintReceipt(orderInfo.id);
-            toast.success('Print command sent to ESC/POS device successfully!', { id: toastId });
-        } catch (err) {
-            toast.error('Hardware offline or error. Using browser fallback.');
+            toast.success('Print command sent to ESC/POS device!', { id: toastId });
+        } catch {
+            toast.error('Hardware offline. Using browser print.');
             window.print();
+        }
+    };
+
+    const tryAutoPrint = async (orderId: number) => {
+        try {
+            const result = await requestPrintReceipt(orderId);
+            // If auto-print is enabled but hardware mock returned success=true, done.
+            // If autoPrint=true but success=false, fallback to browser.
+            if (result.autoPrint && !result.success) window.print();
+        } catch {
+            // Backend unreachable — do NOT auto-print, let user press the button manually
         }
     };
 
@@ -56,7 +67,7 @@ export default function CheckoutPage() {
             setShowReceipt(true);
             toast.success('Funds Secured.');
             clearCart();
-            setTimeout(() => window.print(), 800);
+            tryAutoPrint(order.id);
         } catch (err: any) {
             toast.error(err.message || 'Transaction failed');
         } finally {
@@ -96,7 +107,7 @@ export default function CheckoutPage() {
             setShowReceipt(true);
             toast.success('Digital signature verified');
             clearCart();
-            setTimeout(() => window.print(), 800);
+            tryAutoPrint(orderInfo.id);
         } catch (err: any) {
             toast.error(err.message || 'Verification failed');
         } finally {

@@ -7,14 +7,13 @@ import {
     CheckCircle2,
     AlertCircle,
     Loader2,
-    RefreshCw,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
-import { getQR, confirmPayment, getOrderById, getReceipt } from '@/lib/api';
+import { getQR, confirmPayment, getOrderById, getReceipt, requestPrintReceipt } from '@/lib/api';
 import type { Order } from '@/types';
 import { Receipt } from '@/components/Receipt';
-import { useRef } from 'react';
+import TimerBar from '@/components/TimerBar';
 import { createPortal } from 'react-dom';
 
 function formatPrice(n: number): string {
@@ -28,7 +27,7 @@ export default function QRPaymentPage() {
     const [qrData, setQrData] = useState<{ qrCode: string; reference: string; amount: number; expiresAt: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+    const [qrTotalSeconds, setQrTotalSeconds] = useState(300);
     const [expired, setExpired] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [orderInfo, setOrderInfo] = useState<any>(null);
@@ -45,11 +44,11 @@ export default function QRPaymentPage() {
                 setOrder(o);
                 setQrData(q);
 
-                // Calculate initial time left
+                // Calculate seconds remaining from server expiry
                 const expiry = new Date(q.expiresAt).getTime();
                 const now = new Date().getTime();
                 const diff = Math.max(0, Math.floor((expiry - now) / 1000));
-                setTimeLeft(diff);
+                setQrTotalSeconds(diff);
                 if (diff <= 0) setExpired(true);
             } catch (err: any) {
                 toast.error(err.message || 'Failed to initialize payment');
@@ -59,21 +58,6 @@ export default function QRPaymentPage() {
         };
         fetchData();
     }, [orderId]);
-
-    useEffect(() => {
-        if (timeLeft <= 0 || expired) return;
-        const interval = setInterval(() => {
-            setTimeLeft(prev => {
-                if (prev <= 1) {
-                    setExpired(true);
-                    clearInterval(interval);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [timeLeft, expired]);
 
     const handleConfirm = async () => {
         if (!orderId) return;
@@ -85,10 +69,13 @@ export default function QRPaymentPage() {
             setShowSuccess(true);
             toast.success('Payment confirmed successfully');
 
-            // Auto print
-            setTimeout(() => {
-                window.print();
-            }, 500);
+            // Auto print — respects AUTO_PRINT_RECEIPT setting
+            try {
+                const result = await requestPrintReceipt(Number(orderId));
+                if (result.autoPrint && !result.success) window.print();
+            } catch {
+                // Backend unreachable, skip auto-print
+            }
         } catch (err: any) {
             toast.error(err.message || 'Failed to confirm payment');
         } finally {
@@ -102,7 +89,9 @@ export default function QRPaymentPage() {
         try {
             const q = await getQR(Number(orderId));
             setQrData(q);
-            setTimeLeft(300);
+            const expiry = new Date(q.expiresAt).getTime();
+            const diff = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
+            setQrTotalSeconds(diff);
             setExpired(false);
             toast.success('QR Code refreshed');
         } catch (err: any) {
@@ -112,16 +101,40 @@ export default function QRPaymentPage() {
         }
     };
 
-    const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}:${s.toString().padStart(2, '0')}`;
-    };
-
     if (loading) {
         return (
-            <div className="min-h-screen bg-pos-bg-primary flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-pos-text-primary" />
+            <div className="min-h-screen bg-pos-bg-primary flex flex-col items-center justify-center p-4">
+                <div className="w-full max-w-[400px] bg-[#0f1011] border border-pos-border-default rounded-pos-xl shadow-pos-dialog overflow-hidden animate-pulse">
+                    {/* Header */}
+                    <div className="px-6 py-4 border-b border-pos-border-default flex items-center justify-between">
+                        <div className="w-6 h-6 bg-white/10 rounded" />
+                        <div className="w-24 h-4 bg-white/10 rounded" />
+                        <div className="w-5 h-5 bg-white/10 rounded" />
+                    </div>
+                    {/* Content */}
+                    <div className="p-8 flex flex-col items-center gap-8">
+                        {/* Amount */}
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="w-24 h-3 bg-white/10 rounded" />
+                            <div className="w-40 h-9 bg-white/10 rounded" />
+                        </div>
+                        {/* QR placeholder */}
+                        <div className="w-[212px] h-[212px] bg-white/10 rounded-pos-lg" />
+                        {/* Reference + timer */}
+                        <div className="w-full space-y-4">
+                            <div className="flex justify-between">
+                                <div className="w-20 h-3 bg-white/10 rounded" />
+                                <div className="w-28 h-3 bg-white/10 rounded" />
+                            </div>
+                            <div className="w-full h-2 bg-white/10 rounded-full" />
+                            <div className="w-48 h-3 bg-white/5 rounded mx-auto" />
+                        </div>
+                    </div>
+                    {/* Footer */}
+                    <div className="p-6 bg-[#08090a] border-t border-pos-border-default">
+                        <div className="w-full h-12 bg-white/10 rounded-pos-md" />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -252,7 +265,7 @@ export default function QRPaymentPage() {
                                 value={qrData.qrCode}
                                 size={180}
                                 level="M"
-                                includeMargin
+                                marginSize={4}
                             />
                         )}
                         <AnimatePresence>
@@ -282,26 +295,12 @@ export default function QRPaymentPage() {
                         </div>
 
                         {/* Timer */}
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-pos-nano font-mono font-medium uppercase tracking-widest">
-                                <span className={timeLeft < 60 ? 'text-pos-accent-danger' : 'text-pos-text-tertiary'}>
-                                    {timeLeft < 60 ? 'Hurry' : 'Waiting'}
-                                </span>
-                                <span className="text-pos-text-primary">
-                                    {formatTime(timeLeft)}
-                                </span>
-                            </div>
-                            <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={false}
-                                    animate={{
-                                        width: `${(timeLeft / 300) * 100}%`,
-                                        backgroundColor: timeLeft < 60 ? '#ef4444' : '#f7f8f8'
-                                    }}
-                                    className="h-full"
-                                />
-                            </div>
-                        </div>
+                        {!expired && (
+                            <TimerBar
+                                totalSeconds={qrTotalSeconds}
+                                onExpire={() => setExpired(true)}
+                            />
+                        )}
 
                         <p className="text-pos-nano text-pos-text-tertiary text-center px-4 leading-relaxed text-pretty">
                             Please use your banking app to scan the code. Confirm once done.

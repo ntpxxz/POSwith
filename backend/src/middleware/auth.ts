@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import db from '../db/schema.js';
+import prisma from '../db/prisma.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'pos-secret-key';
 
@@ -15,7 +15,7 @@ export interface AuthRequest extends Request {
   user?: AuthUser;
 }
 
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function authenticate(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -26,18 +26,19 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, JWT_SECRET) as { id: number; email: string; role: string };
 
-    const user = db.prepare(
-      'SELECT id, name, email, role FROM users WHERE id = ? AND is_active = 1'
-    ).get(decoded.id) as AuthUser | undefined;
+    const user = await prisma.user.findFirst({
+      where: { id: decoded.id, isActive: true },
+      select: { id: true, name: true, email: true, role: true },
+    });
 
     if (!user) {
       res.status(401).json({ error: 'User not found or inactive' });
       return;
     }
 
-    req.user = user;
+    req.user = { ...user, role: user.role as string };
     next();
-  } catch (err) {
+  } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 }

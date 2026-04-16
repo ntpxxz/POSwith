@@ -19,7 +19,6 @@ import {
     Calendar,
     Filter,
     Download,
-    Loader2,
     TrendingUp,
     Package,
     CreditCard,
@@ -75,8 +74,62 @@ export default function ReportsPage() {
 
     if (loading && !salesData) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <Loader2 className="w-8 h-8 text-pos-accent-primary animate-spin" />
+            <div className="space-y-6 pb-12 animate-pulse">
+                {/* Header */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="h-6 w-24 bg-white/10 rounded" />
+                        <div className="h-3 w-48 bg-white/5 rounded" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-32 bg-white/10 rounded-pos-md" />
+                        <div className="h-9 w-56 bg-white/10 rounded-pos-md" />
+                        <div className="h-9 w-9 bg-white/10 rounded-pos-md" />
+                    </div>
+                </div>
+                {/* Summary cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[0, 1, 2].map((i) => (
+                        <div key={i} className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded bg-white/10" />
+                                <div className="h-3 w-20 bg-white/10 rounded" />
+                            </div>
+                            <div className="h-8 w-36 bg-white/10 rounded" />
+                        </div>
+                    ))}
+                </div>
+                {/* Line chart */}
+                <div className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-6 space-y-4">
+                    <div className="h-4 w-28 bg-white/10 rounded" />
+                    <div className="h-80 bg-white/5 rounded-pos-md" />
+                </div>
+                {/* Two charts row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {[0, 1].map((i) => (
+                        <div key={i} className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-6 space-y-4">
+                            <div className="h-4 w-32 bg-white/10 rounded" />
+                            <div className="h-72 bg-white/5 rounded-pos-md" />
+                        </div>
+                    ))}
+                </div>
+                {/* Product table */}
+                <div className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default overflow-hidden">
+                    <div className="p-5 border-b border-pos-border-default">
+                        <div className="h-4 w-44 bg-white/10 rounded" />
+                    </div>
+                    <div className="p-6 space-y-3">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className="flex gap-4">
+                                <div className="h-4 flex-1 bg-white/10 rounded" />
+                                <div className="h-4 w-20 bg-white/10 rounded" />
+                                <div className="h-4 w-12 bg-white/5 rounded" />
+                                <div className="h-4 w-12 bg-white/5 rounded" />
+                                <div className="h-4 w-24 bg-white/10 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }

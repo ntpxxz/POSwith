@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ──────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  CASHIER
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum CashAdjustmentType {
+  IN
+  OUT
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+// ── Models ─────────────────────────────────────────────────────────────
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(CASHIER)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  orders           Order[]          @relation("OrderCreatedBy")
+  paymentsConfirmed Payment[]       @relation("PaymentConfirmedBy")
+  discounts        Discount[]
+  refunds          Refund[]
+  shiftsOpened     Shift[]          @relation("ShiftOpenedBy")
+  shiftsClosed     Shift[]          @relation("ShiftClosedBy")
+  cashAdjustments  CashAdjustment[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  category  String
+  price     Decimal  @db.Decimal(10, 2)
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  imageUrl  String?  @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orderItems OrderItem[]
+
+  @@index([category])
+  @@index([isActive])
+  @@map("products")
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  orderNumber    String      @unique @map("order_number")
+  status         OrderStatus @default(PENDING)
+  totalAmount    Decimal     @default(0) @db.Decimal(10, 2) @map("total_amount")
+  discountAmount Decimal     @default(0) @db.Decimal(10, 2) @map("discount_amount")
+  netAmount      Decimal     @default(0) @db.Decimal(10, 2) @map("net_amount")
+  cancelReason   String?     @map("cancel_reason")
+  createdById    Int?        @map("created_by")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  createdBy  User?       @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  items      OrderItem[]
+  payments   Payment[]
+  discounts  Discount[]
+  refunds    Refund[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([orderNumber])
+  @@index([createdById])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            Int     @id @default(autoincrement())
+  orderId       Int     @map("order_id")
+  productId     Int     @map("product_id")
+  nameSnapshot  String  @map("name_snapshot")
+  priceSnapshot Decimal @db.Decimal(10, 2) @map("price_snapshot")
+  quantity      Int
+  total         Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  orderId         Int           @map("order_id")
+  status          PaymentStatus @default(PENDING)
+  amount          Decimal       @db.Decimal(10, 2)
+  method          String
+  idempotencyKey  String?       @unique @map("idempotency_key")
+  referenceCode   String?       @map("reference_code")
+  qrExpiresAt     DateTime?     @map("qr_expires_at")
+  confirmedById   Int?          @map("confirmed_by")
+  confirmedAt     DateTime?     @map("confirmed_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  order       Order @relation(fields: [orderId], references: [id])
+  confirmedBy User? @relation("PaymentConfirmedBy", fields: [confirmedById], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@map("payments")
+}
+
+model Discount {
+  id          Int          @id @default(autoincrement())
+  orderId     Int          @map("order_id")
+  type        DiscountType
+  value       Decimal      @db.Decimal(10, 2)
+  note        String?
+  createdById Int?         @map("created_by")
+  appliedAt   DateTime     @default(now()) @map("applied_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  order     Order @relation(fields: [orderId], references: [id])
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@index([orderId])
+  @@map("discounts")
+}
+
+model Refund {
+  id          Int      @id @default(autoincrement())
+  orderId     Int      @map("order_id")
+  amount      Decimal  @db.Decimal(10, 2)
+  reason      String?
+  createdById Int?     @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order     Order @relation(fields: [orderId], references: [id])
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@index([orderId])
+  @@map("refunds")
+}
+
+model PaymentMethod {
+  id       Int     @id @default(autoincrement())
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true) @map("is_active")
+  isDefault Boolean @default(false) @map("is_default")
+
+  configs PaymentConfig[]
+
+  @@map("payment_methods")
+}
+
+model PaymentConfig {
+  id        Int      @id @default(autoincrement())
+  methodId  Int      @map("method_id")
+  keyName   String   @map("key_name")
+  value     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  method PaymentMethod @relation(fields: [methodId], references: [id])
+
+  @@index([methodId])
+  @@map("payment_configs")
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  keyName   String   @unique @map("key_name")
+  value     String?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([keyName])
+  @@map("settings")
+}
+
+model Shift {
+  id           Int         @id @default(autoincrement())
+  openedById   Int         @map("opened_by")
+  closedById   Int?        @map("closed_by")
+  openingCash  Decimal     @default(0) @db.Decimal(10, 2) @map("opening_cash")
+  closingCash  Decimal?    @db.Decimal(10, 2) @map("closing_cash")
+  status       ShiftStatus @default(OPEN)
+  openedAt     DateTime    @default(now()) @map("opened_at")
+  closedAt     DateTime?   @map("closed_at")
+
+  openedBy        User             @relation("ShiftOpenedBy", fields: [openedById], references: [id])
+  closedBy        User?            @relation("ShiftClosedBy", fields: [closedById], references: [id])
+  cashAdjustments CashAdjustment[]
+
+  @@index([status])
+  @@map("shifts")
+}
+
+model CashAdjustment {
+  id          Int                @id @default(autoincrement())
+  shiftId     Int                @map("shift_id")
+  amount      Decimal            @db.Decimal(10, 2)
+  type        CashAdjustmentType
+  reason      String?
+  createdById Int?               @map("created_by")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  shift     Shift @relation(fields: [shiftId], references: [id])
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@index([shiftId])
+  @@map("cash_adjustments")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  userId    Int?     @map("user_id")
+  entity    String?
+  entityId  Int?     @map("entity_id")
+  payload   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -14,6 +14,7 @@ import {
   X,
   ChevronRight,
   Store,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
   { to: '/admin/shifts', icon: Clock, label: 'Shifts' },
   { to: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
+  { to: '/admin/refunds', icon: RotateCcw, label: 'Refunds' },
 ];
 
 function getBreadcrumb(pathname: string): string {
@@ -36,6 +38,7 @@ function getBreadcrumb(pathname: string): string {
     '/admin/reports': 'Reports',
     '/admin/shifts': 'Shifts',
     '/admin/audit-logs': 'Audit Logs',
+    '/admin/refunds': 'Refunds',
   };
   return map[pathname] || 'Dashboard';
 }

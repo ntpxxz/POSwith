@@ -16,6 +16,7 @@ const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 const ReportsPage = lazy(() => import('@/pages/admin/ReportsPage'));
 const ShiftManagementPage = lazy(() => import('@/pages/admin/ShiftManagementPage'));
 const AuditLogsPage = lazy(() => import('@/pages/admin/AuditLogsPage'));
+const RefundPage = lazy(() => import('@/pages/admin/RefundPage'));
 
 function LoadingScreen() {
   return (
@@ -76,6 +77,7 @@ export default function App() {
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="shifts" element={<ShiftManagementPage />} />
                 <Route path="audit-logs" element={<AuditLogsPage />} />
+                <Route path="refunds" element={<RefundPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

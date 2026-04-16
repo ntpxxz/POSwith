@@ -9,9 +9,10 @@ import {
   Loader2,
   Package,
   ChevronDown,
+  ImagePlus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getAllProducts, createProduct, updateProduct, deleteProduct } from '@/lib/api';
+import { getAllProducts, createProduct, updateProduct, deleteProduct, uploadProductImage } from '@/lib/api';
 import type { Product } from '@/types';
 
 const CATEGORIES = ['Coffee', 'Sandwich', 'Bakery'];
@@ -34,6 +35,12 @@ const emptyForm: ProductForm = {
   is_active: true,
 };
 
+function resolveImageUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `http://localhost:3000${url}`;
+}
+
 function formatBaht(n: number): string {
   return `฿${n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -47,6 +54,7 @@ export default function ProductManagementPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [togglingId, setTogglingId] = useState<number | null>(null);
@@ -110,9 +118,9 @@ export default function ProductManagementPage() {
         name: form.name.trim(),
         category: form.category,
         price: Number(form.price),
-        sort_order: Number(form.sort_order) || 0,
-        image_url: form.image_url.trim(),
-        is_active: form.is_active ? 1 : 0,
+        sortOrder: Number(form.sort_order) || 0,
+        image: form.image_url.trim() || undefined,
+        active: form.is_active,
       };
 
       if (editingId) {
@@ -149,7 +157,7 @@ export default function ProductManagementPage() {
   const handleToggleActive = async (product: Product) => {
     setTogglingId(product.id);
     try {
-      await updateProduct(product.id, { is_active: product.active ? 0 : 1 });
+      await updateProduct(product.id, { active: !product.active });
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, active: !p.active } : p))
       );
@@ -257,7 +265,7 @@ export default function ProductManagementPage() {
                       <div className="flex items-center gap-3">
                         {product.image ? (
                           <img
-                            src={product.image}
+                            src={resolveImageUrl(product.image)}
                             alt={product.name}
                             className="w-8 h-8 rounded-pos-sm object-cover"
                           />
@@ -412,18 +420,58 @@ export default function ProductManagementPage() {
                   />
                 </div>
 
-                {/* Image URL */}
+                {/* Image Upload */}
                 <div>
-                  <label className="block text-pos-sm text-pos-text-secondary mb-1.5">
-                    Image URL
+                  <label className="block text-pos-sm text-pos-text-secondary mb-1.5">Image</label>
+                  <label className={`flex flex-col items-center justify-center w-full h-40 rounded-pos-md border-2 border-dashed transition-colors cursor-pointer overflow-hidden relative
+                    ${uploading ? 'opacity-50 pointer-events-none' : 'border-pos-border-default hover:border-pos-border-focus bg-pos-bg-primary'}`}>
+                    {form.image_url ? (
+                      <>
+                        <img
+                          src={resolveImageUrl(form.image_url)}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-pos-xs font-medium">
+                          <ImagePlus size={16} /> เปลี่ยนรูป
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-pos-text-disabled">
+                        {uploading ? <Loader2 size={24} className="animate-spin" /> : <ImagePlus size={24} />}
+                        <span className="text-pos-xs">{uploading ? 'กำลังอัพโหลด...' : 'คลิกเพื่ออัพโหลดรูป'}</span>
+                        <span className="text-pos-nano text-pos-text-disabled">JPG, PNG, WEBP — สูงสุด 5MB</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploading(true);
+                        try {
+                          const url = await uploadProductImage(file);
+                          setForm(f => ({ ...f, image_url: url }));
+                        } catch (err: any) {
+                          toast.error(err?.message || 'Upload failed');
+                        } finally {
+                          setUploading(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
                   </label>
-                  <input
-                    type="text"
-                    value={form.image_url}
-                    onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-pos-bg-primary border border-pos-border-default rounded-pos-md text-pos-sm text-pos-text-primary placeholder:text-pos-text-disabled focus:outline-none focus:border-pos-border-focus transition-colors"
-                    placeholder="https://..."
-                  />
+                  {form.image_url && (
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, image_url: '' }))}
+                      className="mt-1.5 text-pos-xs text-pos-accent-danger hover:underline"
+                    >
+                      ลบรูป
+                    </button>
+                  )}
                 </div>
 
                 {/* Active toggle */}
