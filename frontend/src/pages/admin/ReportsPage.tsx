@@ -41,6 +41,7 @@ export default function ReportsPage() {
     const [salesData, setSalesData] = useState<any>(null);
     const [productsData, setProductsData] = useState<any[]>([]);
     const [paymentsData, setPaymentsData] = useState<any>(null);
+    const navigate = useNavigate();
 
     const fetchData = async () => {
         setLoading(true);
@@ -102,13 +103,13 @@ export default function ReportsPage() {
                 {/* Header */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="space-y-2">
-                        <div className="h-6 w-24 bg-white/10 rounded" />
-                        <div className="h-3 w-48 bg-white/5 rounded" />
+                        <div className="h-6 w-24 bg-black/10 rounded" />
+                        <div className="h-3 w-48 bg-black/5 rounded" />
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="h-9 w-32 bg-white/10 rounded-pos-md" />
-                        <div className="h-9 w-56 bg-white/10 rounded-pos-md" />
-                        <div className="h-9 w-9 bg-white/10 rounded-pos-md" />
+                        <div className="h-9 w-32 bg-black/10 rounded-pos-md" />
+                        <div className="h-9 w-56 bg-black/10 rounded-pos-md" />
+                        <div className="h-9 w-9 bg-black/10 rounded-pos-md" />
                     </div>
                 </div>
                 {/* Summary cards */}
@@ -116,40 +117,40 @@ export default function ReportsPage() {
                     {[0, 1, 2].map((i) => (
                         <div key={i} className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-5 space-y-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded bg-white/10" />
-                                <div className="h-3 w-20 bg-white/10 rounded" />
+                                <div className="w-8 h-8 rounded bg-black/10" />
+                                <div className="h-3 w-20 bg-black/10 rounded" />
                             </div>
-                            <div className="h-8 w-36 bg-white/10 rounded" />
+                            <div className="h-8 w-36 bg-black/10 rounded" />
                         </div>
                     ))}
                 </div>
                 {/* Line chart */}
                 <div className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-6 space-y-4">
-                    <div className="h-4 w-28 bg-white/10 rounded" />
-                    <div className="h-80 bg-white/5 rounded-pos-md" />
+                    <div className="h-4 w-28 bg-black/10 rounded" />
+                    <div className="h-80 bg-black/5 rounded-pos-md" />
                 </div>
                 {/* Two charts row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {[0, 1].map((i) => (
                         <div key={i} className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-6 space-y-4">
-                            <div className="h-4 w-32 bg-white/10 rounded" />
-                            <div className="h-72 bg-white/5 rounded-pos-md" />
+                            <div className="h-4 w-32 bg-black/10 rounded" />
+                            <div className="h-72 bg-black/5 rounded-pos-md" />
                         </div>
                     ))}
                 </div>
                 {/* Product table */}
                 <div className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default overflow-hidden">
                     <div className="p-5 border-b border-pos-border-default">
-                        <div className="h-4 w-44 bg-white/10 rounded" />
+                        <div className="h-4 w-44 bg-black/10 rounded" />
                     </div>
                     <div className="p-6 space-y-3">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <div key={i} className="flex gap-4">
-                                <div className="h-4 flex-1 bg-white/10 rounded" />
-                                <div className="h-4 w-20 bg-white/10 rounded" />
-                                <div className="h-4 w-12 bg-white/5 rounded" />
-                                <div className="h-4 w-12 bg-white/5 rounded" />
-                                <div className="h-4 w-24 bg-white/10 rounded" />
+                                <div className="h-4 flex-1 bg-black/10 rounded" />
+                                <div className="h-4 w-20 bg-black/10 rounded" />
+                                <div className="h-4 w-12 bg-black/5 rounded" />
+                                <div className="h-4 w-12 bg-black/5 rounded" />
+                                <div className="h-4 w-24 bg-black/10 rounded" />
                             </div>
                         ))}
                     </div>
@@ -157,8 +158,6 @@ export default function ReportsPage() {
             </div>
         );
     }
-
-    const navigate = useNavigate();
 
     return (
         <div className="space-y-6 pb-12">
@@ -264,15 +263,15 @@ export default function ReportsPage() {
                 <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={salesData?.daily || []}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#2E2E4A" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" vertical={false} />
                             <XAxis
                                 dataKey="date"
-                                tick={{ fill: '#A0A0B8', fontSize: 10 }}
+                                tick={{ fill: '#64748b', fontSize: 10 }}
                                 tickFormatter={(val) => format(new Date(val), 'dd MMM')}
                             />
-                            <YAxis tick={{ fill: '#A0A0B8', fontSize: 10 }} tickFormatter={(val) => `฿${val / 1000}k`} />
+                            <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(val) => `฿${val / 1000}k`} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#252540', border: '1px solid #2E2E4A', borderRadius: '8px' }}
+                                contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                 labelFormatter={(label) => format(new Date(label), 'dd MMMM yyyy')}
                                 formatter={(val: number) => [formatBaht(val), 'Sales']}
                             />
@@ -311,7 +310,7 @@ export default function ReportsPage() {
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#252540', border: '1px solid #2E2E4A', borderRadius: '8px' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                     formatter={(val: number) => [formatBaht(val), 'Total']}
                                 />
                                 <Legend verticalAlign="bottom" height={36} />
@@ -330,16 +329,16 @@ export default function ReportsPage() {
                                 data={productsData.slice(0, 8)}
                                 margin={{ left: 40 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#2E2E4A" horizontal={true} vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" horizontal={true} vertical={false} />
                                 <XAxis type="number" hide />
                                 <YAxis
                                     dataKey="product_name"
                                     type="category"
-                                    tick={{ fill: '#A0A0B8', fontSize: 10 }}
+                                    tick={{ fill: '#64748b', fontSize: 10 }}
                                     width={100}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#252540', border: '1px solid #2E2E4A', borderRadius: '8px' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                     formatter={(val: number) => [val.toLocaleString(), 'Sold']}
                                 />
                                 <Bar dataKey="total_quantity" fill="#10D98A" radius={[0, 4, 4, 0]} />
