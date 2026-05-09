@@ -196,18 +196,28 @@ export async function getAuditLogs(params?: { from?: string; to?: string; action
 
 // ─── Admin: Reports ─────────────────────────────────────────────
 export function getSalesReport(params: { from: string; to: string }) {
-  const query = new URLSearchParams(params).toString();
-  return get<import('@/types').SalesReport>(`/admin/reports/sales?${query}`);
+  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
+  return get<import('@/types').SalesReport>(`/admin/reports/sales?${q}`);
 }
 
 export function getProductsReport(params: { from: string; to: string }) {
-  const query = new URLSearchParams(params).toString();
-  return get<import('@/types').ProductsReport>(`/admin/reports/products?${query}`);
+  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
+  return get<import('@/types').ProductsReport>(`/admin/reports/products?${q}`);
 }
 
 export function getPaymentsReport(params: { from: string; to: string }) {
-  const query = new URLSearchParams(params).toString();
-  return get<import('@/types').PaymentsReport>(`/admin/reports/payments?${query}`);
+  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
+  return get<import('@/types').PaymentsReport>(`/admin/reports/payments?${q}`);
+}
+
+export function getStaffReport(params: { from: string; to: string }) {
+  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
+  return get<{ staff: import('@/types').StaffReportRow[] }>(`/admin/reports/staff?${q}`);
+}
+
+export async function getShiftReport(shiftId: number) {
+  const res = await get<{ report: import('@/types').ShiftReport }>(`/admin/shifts/${shiftId}/report`);
+  return res.report;
 }
 
 // ─── Admin: Products (CRUD) ─────────────────────────────────────

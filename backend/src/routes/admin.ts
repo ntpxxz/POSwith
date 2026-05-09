@@ -712,27 +712,33 @@ router.get('/reports/products', async (req: AuthRequest, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
 
+    const dateWhere = start_date || end_date ? {
+      createdAt: {
+        ...(start_date ? { gte: new Date(start_date as string) } : {}),
+        ...(end_date ? { lte: new Date(`${end_date}T23:59:59.999Z`) } : {}),
+      },
+    } : {};
+
     const report = await prisma.orderItem.groupBy({
       by: ['nameSnapshot', 'productId'],
-      where: {
-        order: {
-          status: 'COMPLETED',
-          ...(start_date || end_date ? {
-            createdAt: {
-              ...(start_date ? { gte: new Date(start_date as string) } : {}),
-              ...(end_date ? { lte: new Date(`${end_date}T23:59:59.999Z`) } : {}),
-            },
-          } : {}),
-        },
-      },
+      where: { order: { status: 'COMPLETED', ...dateWhere } },
       _sum: { quantity: true, total: true },
       _count: { orderId: true },
       orderBy: { _sum: { quantity: 'desc' } },
     });
 
+    // Fetch categories for the productIds we have
+    const productIds = report.map(r => r.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, category: true },
+    });
+    const categoryMap = new Map(products.map(p => [p.id, p.category]));
+
     res.json({
       products: report.map(r => ({
         product_name: r.nameSnapshot,
+        category: categoryMap.get(r.productId) ?? 'Unknown',
         total_quantity: r._sum.quantity ?? 0,
         total_sales: Number(r._sum.total ?? 0),
         order_count: r._count.orderId,
@@ -743,6 +749,7 @@ router.get('/reports/products', async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 router.get('/reports/payments', async (req: AuthRequest, res: Response) => {
   try {
@@ -780,4 +787,165 @@ router.get('/reports/payments', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// ── Staff Performance Report ─────────────────────────────────────────────
+
+router.get('/reports/staff', async (req: AuthRequest, res: Response) => {
+  try {
+    const { start_date, end_date } = req.query;
+    const dateWhere: any = start_date || end_date ? {
+      createdAt: {
+        ...(start_date ? { gte: new Date(start_date as string) } : {}),
+        ...(end_date ? { lte: new Date(`${end_date}T23:59:59.999Z`) } : {}),
+      },
+    } : {};
+
+    // Get all cashiers
+    const cashiers = await prisma.user.findMany({
+      where: { role: 'CASHIER', isActive: true },
+      select: { id: true, name: true },
+    });
+
+    const staffData = await Promise.all(
+      cashiers.map(async (cashier) => {
+        const orderWhere = { status: 'COMPLETED' as const, createdById: cashier.id, ...dateWhere };
+
+        const [orderAgg, paymentBreakdown, discountAgg, refundAgg] = await Promise.all([
+          prisma.order.aggregate({
+            where: orderWhere,
+            _count: true,
+            _sum: { netAmount: true },
+            _avg: { netAmount: true },
+          }),
+          prisma.payment.groupBy({
+            by: ['method'],
+            where: { status: 'SUCCESS', order: { createdById: cashier.id, ...dateWhere } },
+            _count: true,
+          }),
+          prisma.discount.aggregate({
+            where: { order: orderWhere },
+            _sum: { value: true },
+          }),
+          prisma.refund.aggregate({
+            where: { order: { createdById: cashier.id, ...dateWhere } },
+            _count: true,
+            _sum: { amount: true },
+          }),
+        ]);
+
+        const cashOrders = paymentBreakdown.find(p => p.method === 'CASH')?._count ?? 0;
+        const qrOrders = paymentBreakdown.find(p => p.method === 'QR')?._count ?? 0;
+
+        return {
+          userId: cashier.id,
+          userName: cashier.name,
+          totalOrders: orderAgg._count,
+          totalSales: Number(orderAgg._sum.netAmount ?? 0),
+          avgOrderValue: Number(orderAgg._avg.netAmount ?? 0),
+          cashOrders,
+          qrOrders,
+          discountGiven: Number(discountAgg._sum.value ?? 0),
+          refundCount: refundAgg._count,
+          refundAmount: Number(refundAgg._sum.amount ?? 0),
+        };
+      })
+    );
+
+    res.json({ staff: staffData.sort((a, b) => b.totalSales - a.totalSales) });
+  } catch (err) {
+    console.error('Staff report error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── Shift Cash-Control Report ───────────────────────────────────────────
+
+router.get('/shifts/:id/report', async (req: AuthRequest, res: Response) => {
+  try {
+    const shiftId = Number(req.params.id);
+
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      include: {
+        openedBy: { select: { name: true } },
+        closedBy: { select: { name: true } },
+        cashAdjustments: { orderBy: { id: 'asc' } },
+      },
+    });
+
+    if (!shift) {
+      res.status(404).json({ error: 'Shift not found' });
+      return;
+    }
+
+    const shiftStart = shift.openedAt;
+    const shiftEnd = shift.closedAt ?? new Date();
+
+    // Sales during this shift window
+    const [paymentBreakdown, orderAgg, refundAgg] = await Promise.all([
+      prisma.payment.groupBy({
+        by: ['method'],
+        where: { status: 'SUCCESS', createdAt: { gte: shiftStart, lte: shiftEnd } },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      prisma.order.aggregate({
+        where: { status: 'COMPLETED', createdAt: { gte: shiftStart, lte: shiftEnd } },
+        _count: true,
+        _sum: { netAmount: true },
+      }),
+      prisma.refund.aggregate({
+        where: { createdAt: { gte: shiftStart, lte: shiftEnd } },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const cashSales = Number(paymentBreakdown.find(p => p.method === 'CASH')?._sum.amount ?? 0);
+    const qrSales = Number(paymentBreakdown.find(p => p.method === 'QR')?._sum.amount ?? 0);
+    const totalSales = Number(orderAgg._sum.netAmount ?? 0);
+
+    const cashIn = shift.cashAdjustments
+      .filter(a => a.type === 'IN')
+      .reduce((s, a) => s + Number(a.amount), 0);
+    const cashOut = shift.cashAdjustments
+      .filter(a => a.type === 'OUT')
+      .reduce((s, a) => s + Number(a.amount), 0);
+
+    const expectedCash = Number(shift.openingCash) + cashSales + cashIn - cashOut;
+    const closingCash = shift.closingCash != null ? Number(shift.closingCash) : null;
+    const difference = closingCash != null ? closingCash - expectedCash : null;
+
+    res.json({
+      report: {
+        shiftId: shift.id,
+        openedAt: shift.openedAt,
+        closedAt: shift.closedAt,
+        status: shift.status,
+        openedBy: shift.openedBy.name,
+        closedBy: shift.closedBy?.name ?? null,
+        openingCash: Number(shift.openingCash),
+        closingCash,
+        cashSales,
+        qrSales,
+        totalSales,
+        totalOrders: orderAgg._count,
+        cashIn,
+        cashOut,
+        expectedCash,
+        difference,
+        adjustments: shift.cashAdjustments.map(a => ({
+          id: a.id,
+          type: a.type,
+          amount: Number(a.amount),
+          reason: a.reason,
+          createdAt: a.createdAt,
+        })),
+      },
+    });
+  } catch (err) {
+    console.error('Shift report error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
+

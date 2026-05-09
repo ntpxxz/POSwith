@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
     BarChart,
@@ -17,16 +17,18 @@ import {
 } from 'recharts';
 import {
     Calendar,
-    Filter,
     Download,
     TrendingUp,
     Package,
     CreditCard,
     RefreshCw,
+    Users,
 } from 'lucide-react';
 import { getSalesReport, getProductsReport, getPaymentsReport } from '@/lib/api';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+
 
 const COLORS = ['#FF6B35', '#10D98A', '#4FC3F7', '#F5A623', '#FF4757', '#9D50BB'];
 
@@ -71,6 +73,28 @@ export default function ReportsPage() {
             to: format(new Date(), 'yyyy-MM-dd'),
         });
     };
+
+    const exportCSV = useCallback(() => {
+        if (!productsData.length) { toast.error('No product data to export'); return; }
+        const headers = ['Product', 'Category', 'Orders', 'Sold Qty', 'Revenue (฿)'];
+        const rows = productsData.map((p: any) => [
+            `"${p.product_name}"`,
+            `"${p.category ?? ''}"`  ,
+            p.order_count,
+            p.total_quantity,
+            p.total_sales.toFixed(2),
+        ]);
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `product-report_${dateRange.from}_${dateRange.to}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('CSV downloaded');
+    }, [productsData, dateRange]);
+
 
     if (loading && !salesData) {
         return (
@@ -134,6 +158,8 @@ export default function ReportsPage() {
         );
     }
 
+    const navigate = useNavigate();
+
     return (
         <div className="space-y-6 pb-12">
             {/* Header & Filters */}
@@ -144,6 +170,14 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Staff Reports shortcut */}
+                    <button
+                        onClick={() => navigate('/admin/staff-reports')}
+                        className="flex items-center gap-2 px-3 py-2 bg-pos-bg-surface border border-pos-border-default rounded-pos-md text-pos-xs text-pos-text-secondary hover:text-pos-text-primary hover:border-pos-border-focus transition-colors"
+                    >
+                        <Users size={14} />
+                        Staff Reports
+                    </button>
                     <div className="flex bg-pos-bg-surface border border-pos-border-default rounded-pos-md p-1">
                         {[7, 30, 90].map((days) => (
                             <button
@@ -172,6 +206,13 @@ export default function ReportsPage() {
                         />
                     </div>
                     <button
+                        onClick={exportCSV}
+                        title="Export products to CSV"
+                        className="p-2.5 bg-pos-bg-surface border border-pos-border-default rounded-pos-md text-pos-text-secondary hover:text-pos-accent-success transition-colors"
+                    >
+                        <Download size={16} />
+                    </button>
+                    <button
                         onClick={fetchData}
                         className="p-2.5 bg-pos-bg-surface border border-pos-border-default rounded-pos-md text-pos-text-secondary hover:text-pos-accent-primary transition-colors"
                     >
@@ -196,7 +237,7 @@ export default function ReportsPage() {
                 <div className="bg-pos-bg-surface rounded-pos-lg shadow-pos-card p-5 border border-pos-border-default">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 rounded bg-pos-accent-info/10 text-pos-accent-info">
-                            <Filter size={18} />
+                            <TrendingUp size={18} style={{ transform: 'scaleX(-1)' }} />
                         </div>
                         <span className="text-pos-sm text-pos-text-secondary">Orders</span>
                     </div>
