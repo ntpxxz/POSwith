@@ -4,15 +4,15 @@ services:
     container_name: pos_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: pos_user
-      POSTGRES_PASSWORD: pos_password
-      POSTGRES_DB: pos_db
+      POSTGRES_USER: ${POSTGRES_USER:-pos_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pos_password}
+      POSTGRES_DB: ${POSTGRES_DB:-pos_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pos_user -d pos_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pos_user} -d ${POSTGRES_DB:-pos_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,15 +27,19 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://pos_user:pos_password@postgres:5432/pos_db
-      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://pos_user:pos_password@postgres:5432/pos_db}
+      JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
       PORT: 3000
-    # No external port — only accessible via nginx
     expose:
       - "3000"
     volumes:
       - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health/live', (res) => { if (res.statusCode === 200) process.exit(0); else process.exit(1); }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     build:
@@ -44,7 +48,8 @@ services:
     container_name: pos_nginx
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
 

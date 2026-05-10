@@ -37,8 +37,8 @@ const emptyForm: ProductForm = {
 
 function resolveImageUrl(url: string): string {
   if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `http://localhost:3000${url}`;
+  if (url.startsWith('http') || url.startsWith('/')) return url;
+  return url;
 }
 
 function formatBaht(n: number): string {

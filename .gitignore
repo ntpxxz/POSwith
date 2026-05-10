@@ -24,4 +24,5 @@ backend/pos.db-wal
 
 # OS files
 .DS_Store
-Thumbs.db
+# Uploads
+backend/uploads/

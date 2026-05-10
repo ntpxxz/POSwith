@@ -39,11 +39,22 @@ app.use('/api/admin', authenticate, adminRoutes);
 // Static files for product images if any
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// Error handling for debugging
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Error:', err.stack || err.message || err);
+    
+    const statusCode = err.status || err.statusCode || 500;
+    res.status(statusCode).json({
+        error: process.env.NODE_ENV === 'production' 
+            ? 'Internal Server Error' 
+            : err.message || 'Internal Server Error'
+    });
+});
+
+// Process-level error handling
 process.on('uncaughtException', (err) => {
     console.error('💥 UNCAUGHT EXCEPTION! Shutting down...');
-    console.error(err.name, err.message);
-    console.error(err.stack);
+    console.error(err.name, err.message, err.stack);
     process.exit(1);
 });
 
