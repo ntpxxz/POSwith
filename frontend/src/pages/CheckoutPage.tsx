@@ -145,7 +145,7 @@ export default function CheckoutPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="shadow-pos-dialog border border-white/10 rounded-pos-lg bg-pos-bg-surface overflow-hidden"
+                        className="shadow-pos-dialog border border-pos-border-default rounded-pos-lg bg-pos-bg-surface overflow-hidden"
                     >
                         <Receipt order={orderInfo} />
                     </motion.div>
@@ -158,13 +158,13 @@ export default function CheckoutPage() {
                     >
                         <button
                             onClick={handleHardwarePrint}
-                            className="w-full py-3 bg-white/10 hover:bg-white/15 text-pos-text-primary border border-pos-border-default rounded-pos-md font-body font-medium text-pos-sm transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-pos-bg-elevated hover:bg-black/10 text-pos-text-primary border border-pos-border-default rounded-pos-md font-body font-medium text-pos-sm transition-colors flex items-center justify-center gap-2"
                         >
                             Print Receipt
                         </button>
                         <button
                             onClick={() => navigate('/')}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 text-pos-text-primary border border-pos-border-default rounded-pos-md font-body font-medium text-pos-sm transition-colors"
+                            className="w-full py-3 bg-pos-bg-elevated hover:bg-black/10 text-pos-text-primary border border-pos-border-default rounded-pos-md font-body font-medium text-pos-sm transition-colors"
                         >
                             Back to Terminal
                         </button>
@@ -187,7 +187,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center">
                     <button
                         onClick={() => navigate('/')}
-                        className="group w-10 h-10 flex items-center justify-center -ml-2 mr-4 rounded-full text-pos-text-tertiary hover:text-pos-text-primary bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                        className="group w-10 h-10 flex items-center justify-center -ml-2 mr-4 rounded-full text-pos-text-tertiary hover:text-pos-text-primary bg-pos-bg-elevated hover:bg-black/10 border border-pos-border-default transition-colors"
                     >
                         <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
@@ -256,7 +256,7 @@ export default function CheckoutPage() {
                                             <button
                                                 key={type}
                                                 onClick={() => setDiscount({ ...discount, type: type as any })}
-                                                className={`px-3 py-1 font-medium transition-all border rounded-pos-sm ${discount.type === type ? 'bg-white/10 text-pos-text-primary border-pos-accent-violet' : 'bg-transparent border-white/5 text-pos-text-tertiary hover:border-white/10'}`}
+                                                className={`px-3 py-1 font-medium transition-all border rounded-pos-sm ${discount.type === type ? 'bg-pos-accent-primary/10 text-pos-accent-primary border-pos-accent-primary/30' : 'bg-transparent border-pos-border-default text-pos-text-tertiary hover:border-pos-border-focus'}`}
                                             >
                                                 {type === 'PERCENT' ? '%' : 'FIXED'}
                                             </button>
@@ -271,7 +271,7 @@ export default function CheckoutPage() {
                                         placeholder="0.00"
                                         value={discount.value === 0 ? '' : discount.value}
                                         onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })}
-                                        className="flex-1 bg-white/5 border border-white/10 rounded-pos-md px-4 py-2.5 text-pos-text-primary font-body text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors"
+                                        className="flex-1 bg-pos-bg-primary border border-pos-border-default rounded-pos-md px-4 py-2.5 text-pos-text-primary font-body text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors"
                                     />
                                     <button
                                         onClick={() => setDiscount({ type: 'FIXED', value: 0 })}
@@ -299,13 +299,13 @@ export default function CheckoutPage() {
                                 <button
                                     onClick={handleQRPayment}
                                     disabled={cart.length === 0 || isSubmitting}
-                                    className="flex flex-col items-center justify-center gap-3 p-4 bg-white/5 border border-white/10 rounded-pos-md text-pos-text-primary hover:bg-white/10 transition-colors font-body font-medium disabled:opacity-50"
+                                    className="flex flex-col items-center justify-center gap-3 p-4 bg-pos-bg-elevated border border-pos-border-default rounded-pos-md text-pos-text-primary hover:bg-black/10 transition-colors font-body font-medium disabled:opacity-50"
                                 >
                                     <QrCode size={24} className="text-pos-text-tertiary group-hover:text-pos-text-primary transition-colors" />
                                     <span className="text-pos-sm">Scan QR</span>
                                 </button>
 
-                                <div className="flex flex-col items-center justify-center gap-2 p-3 bg-[#08090a] border border-white/5 shadow-pos-subtle rounded-pos-md focus-within:border-pos-border-focus transition-colors relative">
+                                <div className="flex flex-col items-center justify-center gap-2 p-3 bg-pos-bg-elevated border border-pos-border-default shadow-pos-subtle rounded-pos-md focus-within:border-pos-border-focus transition-colors relative">
                                     <span className="font-body font-medium text-pos-xs text-pos-text-secondary">Cash Tender</span>
                                     <input
                                         id="cash-received"
@@ -344,12 +344,12 @@ export default function CheckoutPage() {
 
             <AnimatePresence>
                 {qrModalOpen && qrData && (
-                    <div className="fixed inset-0 bg-pos-espresso/90 backdrop-blur-md z-50 flex items-center justify-center p-6 print:hidden">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-6 print:hidden">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-[#191a1b] border border-pos-border-default w-full max-w-md rounded-pos-xl shadow-pos-dialog"
+                            className="bg-pos-bg-surface border border-pos-border-default w-full max-w-md rounded-pos-xl shadow-pos-dialog"
                         >
                             <div className="p-5 border-b border-pos-border-default flex justify-between items-center">
                                 <h3 className="font-body font-semibold text-pos-text-primary text-pos-base">Secure Transfer</h3>

@@ -104,35 +104,35 @@ export default function QRPaymentPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-pos-bg-primary flex flex-col items-center justify-center p-4">
-                <div className="w-full max-w-[400px] bg-[#0f1011] border border-pos-border-default rounded-pos-xl shadow-pos-dialog overflow-hidden animate-pulse">
+                <div className="w-full max-w-[400px] bg-pos-bg-surface border border-pos-border-default rounded-pos-xl shadow-pos-dialog overflow-hidden animate-pulse">
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-pos-border-default flex items-center justify-between">
-                        <div className="w-6 h-6 bg-white/10 rounded" />
-                        <div className="w-24 h-4 bg-white/10 rounded" />
-                        <div className="w-5 h-5 bg-white/10 rounded" />
+                        <div className="w-6 h-6 bg-pos-bg-elevated rounded" />
+                        <div className="w-24 h-4 bg-pos-bg-elevated rounded" />
+                        <div className="w-5 h-5 bg-pos-bg-elevated rounded" />
                     </div>
                     {/* Content */}
                     <div className="p-8 flex flex-col items-center gap-8">
                         {/* Amount */}
                         <div className="flex flex-col items-center gap-2">
-                            <div className="w-24 h-3 bg-white/10 rounded" />
-                            <div className="w-40 h-9 bg-white/10 rounded" />
+                            <div className="w-24 h-3 bg-pos-bg-elevated rounded" />
+                            <div className="w-40 h-9 bg-pos-bg-elevated rounded" />
                         </div>
                         {/* QR placeholder */}
-                        <div className="w-[212px] h-[212px] bg-white/10 rounded-pos-lg" />
+                        <div className="w-[212px] h-[212px] bg-pos-bg-elevated rounded-pos-lg" />
                         {/* Reference + timer */}
                         <div className="w-full space-y-4">
                             <div className="flex justify-between">
-                                <div className="w-20 h-3 bg-white/10 rounded" />
-                                <div className="w-28 h-3 bg-white/10 rounded" />
+                                <div className="w-20 h-3 bg-pos-bg-elevated rounded" />
+                                <div className="w-28 h-3 bg-pos-bg-elevated rounded" />
                             </div>
-                            <div className="w-full h-2 bg-white/10 rounded-full" />
-                            <div className="w-48 h-3 bg-white/5 rounded mx-auto" />
+                            <div className="w-full h-2 bg-pos-bg-elevated rounded-full" />
+                            <div className="w-48 h-3 bg-pos-bg-elevated rounded mx-auto" />
                         </div>
                     </div>
                     {/* Footer */}
-                    <div className="p-6 bg-[#08090a] border-t border-pos-border-default">
-                        <div className="w-full h-12 bg-white/10 rounded-pos-md" />
+                    <div className="p-6 bg-pos-bg-elevated border-t border-pos-border-default">
+                        <div className="w-full h-12 bg-pos-secondary-surface rounded-pos-md" />
                     </div>
                 </div>
             </div>
@@ -166,7 +166,7 @@ export default function QRPaymentPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="bg-[#191a1b] rounded-pos-xl shadow-pos-dialog overflow-hidden border border-pos-border-default"
+                        className="bg-pos-bg-surface rounded-pos-xl shadow-pos-dialog overflow-hidden border border-pos-border-default"
                     >
                         <div className="max-h-[50vh] overflow-y-auto">
                             <Receipt order={orderInfo} />
@@ -181,7 +181,7 @@ export default function QRPaymentPage() {
                     >
                         <button
                             onClick={() => window.print()}
-                            className="w-full py-4 bg-white/10 text-pos-text-primary border border-pos-border-default rounded-pos-md font-medium text-pos-sm transition-colors flex items-center justify-center gap-2 hover:bg-white/15"
+                            className="w-full py-4 bg-pos-bg-elevated text-pos-text-primary border border-pos-border-default rounded-pos-md font-medium text-pos-sm transition-colors flex items-center justify-center gap-2 hover:bg-black/10"
                         >
                             Print Receipt
                         </button>
@@ -212,7 +212,7 @@ export default function QRPaymentPage() {
                 <p className="text-pos-text-tertiary mb-8 text-pos-sm">We couldn't load the payment information.</p>
                 <button
                     onClick={() => navigate('/')}
-                    className="px-8 py-3 bg-white/10 border border-white/20 text-pos-text-primary rounded-pos-md hover:bg-white/15 transition-colors font-medium text-pos-sm"
+                    className="px-8 py-3 bg-pos-bg-elevated border border-pos-border-default text-pos-text-primary rounded-pos-md hover:bg-black/10 transition-colors font-medium text-pos-sm"
                 >
                     Back to Register
                 </button>
@@ -225,7 +225,7 @@ export default function QRPaymentPage() {
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-[400px] bg-[#0f1011] border border-pos-border-default rounded-pos-xl shadow-pos-dialog overflow-hidden flex flex-col"
+                className="w-full max-w-[400px] bg-pos-bg-surface border border-pos-border-default rounded-pos-xl shadow-pos-dialog overflow-hidden flex flex-col"
             >
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-pos-border-default flex items-center justify-between">
@@ -309,7 +309,7 @@ export default function QRPaymentPage() {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-6 bg-[#08090a] border-t border-pos-border-default">
+                <div className="p-6 bg-pos-bg-elevated border-t border-pos-border-default">
                     <button
                         onClick={handleConfirm}
                         disabled={confirming || expired}

@@ -92,13 +92,13 @@ export default function DashboardPage() {
       label: 'Today Sales',
       value: data ? formatBaht(data.todaySales) : '-',
       icon: DollarSign,
-      color: 'text-[#0071e3]',
+      color: 'text-pos-accent-primary',
     },
     {
       label: 'Today Orders',
       value: data ? data.todayOrders.toString() : '-',
       icon: ShoppingCart,
-      color: 'text-[#0071e3]',
+      color: 'text-pos-accent-primary',
     },
     {
       label: 'Avg Order Value',
@@ -266,7 +266,7 @@ export default function DashboardPage() {
         {loading ? (
           <div className="p-6 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 bg-[var(--color-light-gray)] rounded animate-pulse" />
+              <div key={i} className="h-10 bg-pos-bg-elevated rounded animate-pulse" />
             ))}
           </div>
         ) : data?.recentOrders && data.recentOrders.length > 0 ? (

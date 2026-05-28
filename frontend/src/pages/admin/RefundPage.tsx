@@ -11,12 +11,12 @@ function formatPrice(n: number) {
 
 function statusBadge(status: AdminOrder['status']) {
   const map: Record<string, string> = {
-    COMPLETED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    REFUNDED: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    PENDING: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    CANCELLED: 'bg-red-500/10 text-red-400 border-red-500/20',
+    COMPLETED: 'bg-pos-accent-success/10 text-pos-accent-success border-pos-accent-success/20',
+    REFUNDED: 'bg-pos-accent-warning/10 text-pos-accent-warning border-pos-accent-warning/20',
+    PENDING: 'bg-pos-accent-info/10 text-pos-accent-info border-pos-accent-info/20',
+    CANCELLED: 'bg-pos-accent-danger/10 text-pos-accent-danger border-pos-accent-danger/20',
   };
-  return map[status] ?? 'bg-white/5 text-pos-text-tertiary border-white/10';
+  return map[status] ?? 'bg-pos-bg-elevated text-pos-text-tertiary border-pos-border-default';
 }
 
 export default function RefundPage() {
@@ -116,7 +116,7 @@ export default function RefundPage() {
             placeholder="ค้นหาด้วยเลขออเดอร์ เช่น ORD-20260411"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/5 border border-pos-border-default rounded-pos-md pl-10 pr-4 py-2.5 text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors font-body"
+            className="w-full bg-pos-bg-primary border border-pos-border-default rounded-pos-md pl-10 pr-4 py-2.5 text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors font-body"
           />
         </div>
         <button
@@ -137,7 +137,7 @@ export default function RefundPage() {
           </p>
 
           {orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white/3 border border-pos-border-default rounded-pos-lg text-center">
+            <div className="flex flex-col items-center justify-center py-16 bg-pos-bg-elevated border border-pos-border-default rounded-pos-lg text-center">
               <AlertCircle size={32} className="text-pos-text-tertiary mb-3" />
               <p className="text-pos-text-secondary text-pos-sm font-body">ไม่พบออเดอร์ที่ตรงกัน</p>
               <p className="text-pos-text-tertiary text-pos-xs font-mono mt-1">ลองค้นหาด้วยเลขออเดอร์อื่น</p>
@@ -146,7 +146,7 @@ export default function RefundPage() {
             <div className="border border-pos-border-default rounded-pos-lg overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-pos-border-default bg-white/3">
+                  <tr className="border-b border-pos-border-default bg-pos-bg-elevated">
                     <th className="px-5 py-3 text-left font-mono text-pos-xs text-pos-text-tertiary uppercase tracking-widest">เลขออเดอร์</th>
                     <th className="px-5 py-3 text-left font-mono text-pos-xs text-pos-text-tertiary uppercase tracking-widest">วันที่</th>
                     <th className="px-5 py-3 text-right font-mono text-pos-xs text-pos-text-tertiary uppercase tracking-widest">ยอดสุทธิ</th>
@@ -161,7 +161,7 @@ export default function RefundPage() {
                     const refunded = order.refunds.reduce((s, r) => s + r.amount, 0);
                     const rem = Math.round((order.netTotal - refunded) * 100) / 100;
                     return (
-                      <tr key={order.id} className="border-b border-pos-border-default last:border-0 hover:bg-white/3 transition-colors">
+                      <tr key={order.id} className="border-b border-pos-border-default last:border-0 hover:bg-pos-bg-elevated transition-colors">
                         <td className="px-5 py-4 font-mono text-pos-sm text-pos-text-primary font-semibold tracking-wider">
                           {order.orderNumber}
                         </td>
@@ -171,10 +171,10 @@ export default function RefundPage() {
                         <td className="px-5 py-4 text-right font-mono text-pos-sm text-pos-text-primary">
                           ฿{formatPrice(order.netTotal)}
                         </td>
-                        <td className="px-5 py-4 text-right font-mono text-pos-xs text-amber-400">
+                        <td className="px-5 py-4 text-right font-mono text-pos-xs text-pos-accent-warning">
                           {refunded > 0 ? `-฿${formatPrice(refunded)}` : '—'}
                         </td>
-                        <td className="px-5 py-4 text-right font-mono text-pos-sm font-semibold text-emerald-400">
+                        <td className="px-5 py-4 text-right font-mono text-pos-sm font-semibold text-pos-accent-success">
                           ฿{formatPrice(rem)}
                         </td>
                         <td className="px-5 py-4 text-center">
@@ -186,7 +186,7 @@ export default function RefundPage() {
                           <button
                             onClick={() => handleSelectOrder(order)}
                             disabled={rem <= 0}
-                            className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-pos-text-primary border border-pos-border-default rounded-pos-sm font-body font-medium text-pos-xs transition-colors flex items-center gap-1.5 ml-auto disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 bg-pos-bg-elevated hover:bg-black/10 text-pos-text-primary border border-pos-border-default rounded-pos-sm font-body font-medium text-pos-xs transition-colors flex items-center gap-1.5 ml-auto disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             <RotateCcw size={13} />
                             คืนเงิน
@@ -210,7 +210,7 @@ export default function RefundPage() {
               initial={{ opacity: 0, scale: 0.95, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              className="bg-[#0f1011] border border-pos-border-default rounded-pos-xl shadow-pos-dialog w-full max-w-lg"
+              className="bg-pos-bg-surface border border-pos-border-default rounded-pos-xl shadow-pos-dialog w-full max-w-lg"
             >
               {/* Modal header */}
               <div className="px-6 py-4 border-b border-pos-border-default flex items-center justify-between">
@@ -222,7 +222,7 @@ export default function RefundPage() {
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="p-1.5 rounded-pos-md text-pos-text-tertiary hover:text-pos-text-primary hover:bg-white/5 transition-colors"
+                  className="p-1.5 rounded-pos-md text-pos-text-tertiary hover:text-pos-text-primary hover:bg-pos-bg-elevated transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -242,13 +242,13 @@ export default function RefundPage() {
                 </div>
                 {alreadyRefunded > 0 && (
                   <div className="flex justify-between font-body text-pos-sm">
-                    <span className="text-amber-400">คืนไปแล้ว</span>
-                    <span className="text-amber-400 font-mono">-฿{formatPrice(alreadyRefunded)}</span>
+                    <span className="text-pos-accent-warning">คืนไปแล้ว</span>
+                    <span className="text-pos-accent-warning font-mono">-฿{formatPrice(alreadyRefunded)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-body font-semibold text-pos-base">
-                  <span className="text-emerald-400">คืนได้อีก</span>
-                  <span className="text-emerald-400 font-mono">฿{formatPrice(remaining)}</span>
+                  <span className="text-pos-accent-success">คืนได้อีก</span>
+                  <span className="text-pos-accent-success font-mono">฿{formatPrice(remaining)}</span>
                 </div>
               </div>
 
@@ -265,12 +265,12 @@ export default function RefundPage() {
                       placeholder={`สูงสุด ฿${formatPrice(remaining)}`}
                       value={refundAmount}
                       onChange={(e) => setRefundAmount(e.target.value)}
-                      className="flex-1 bg-white/5 border border-pos-border-default rounded-pos-md px-4 py-2.5 text-pos-text-primary font-mono text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors"
+                      className="flex-1 bg-pos-bg-primary border border-pos-border-default rounded-pos-md px-4 py-2.5 text-pos-text-primary font-mono text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setRefundAmount(String(remaining))}
-                      className="px-3 py-2.5 bg-white/5 border border-pos-border-default rounded-pos-md text-pos-text-secondary hover:text-pos-text-primary hover:bg-white/10 font-mono text-pos-xs transition-colors whitespace-nowrap"
+                      className="px-3 py-2.5 bg-pos-bg-elevated border border-pos-border-default rounded-pos-md text-pos-text-secondary hover:text-pos-text-primary hover:bg-black/10 font-mono text-pos-xs transition-colors whitespace-nowrap"
                     >
                       คืนเต็ม
                     </button>
@@ -286,7 +286,7 @@ export default function RefundPage() {
                     placeholder="เช่น สินค้าผิด, ลูกค้าเปลี่ยนใจ"
                     value={refundReason}
                     onChange={(e) => setRefundReason(e.target.value)}
-                    className="w-full bg-white/5 border border-pos-border-default rounded-pos-md px-4 py-2.5 text-pos-text-primary font-body text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors"
+                    className="w-full bg-pos-bg-primary border border-pos-border-default rounded-pos-md px-4 py-2.5 text-pos-text-primary font-body text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -295,14 +295,14 @@ export default function RefundPage() {
               <div className="px-6 pb-5 flex gap-3">
                 <button
                   onClick={handleCloseModal}
-                  className="flex-1 py-2.5 bg-white/5 border border-pos-border-default text-pos-text-secondary rounded-pos-md font-body font-medium text-pos-sm hover:text-pos-text-primary hover:bg-white/10 transition-colors"
+                  className="flex-1 py-2.5 bg-pos-bg-elevated border border-pos-border-default text-pos-text-secondary rounded-pos-md font-body font-medium text-pos-sm hover:text-pos-text-primary hover:bg-black/10 transition-colors"
                 >
                   ยกเลิก
                 </button>
                 <button
                   onClick={handleSubmitRefund}
                   disabled={isSubmitting || !refundAmount || !refundReason.trim()}
-                  className="flex-1 py-2.5 bg-amber-500/90 hover:bg-amber-500 text-black rounded-pos-md font-body font-semibold text-pos-sm transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-pos-accent-warning hover:bg-pos-accent-warning/90 text-white rounded-pos-md font-body font-semibold text-pos-sm transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <Loader2 size={16} className="animate-spin" />

@@ -70,7 +70,7 @@ export default function StaffReportsPage() {
             {/* Header & Filters */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/admin/reports')} className="p-2 hover:bg-white/10 rounded-pos-md text-pos-text-secondary transition-colors">
+                    <button onClick={() => navigate('/admin/reports')} className="p-2 hover:bg-pos-bg-elevated rounded-pos-md text-pos-text-secondary transition-colors">
                         <ArrowLeft size={20} />
                     </button>
                     <div>

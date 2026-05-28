@@ -117,10 +117,10 @@ export default function SettingsPage() {
                     <div key={s} className="space-y-6">
                         {/* Section header */}
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-pos-lg bg-white/10" />
+                            <div className="w-10 h-10 rounded-pos-lg bg-pos-bg-elevated" />
                             <div className="space-y-2">
-                                <div className="h-4 w-32 bg-white/10 rounded" />
-                                <div className="h-3 w-48 bg-white/5 rounded" />
+                                <div className="h-4 w-32 bg-pos-bg-elevated rounded" />
+                                <div className="h-3 w-48 bg-pos-secondary-surface rounded" />
                             </div>
                         </div>
                         {/* Field rows */}
@@ -128,10 +128,10 @@ export default function SettingsPage() {
                             {Array.from({ length: 4 }).map((_, i) => (
                                 <div key={i} className="flex items-center justify-between py-3 border-b border-pos-border-default">
                                     <div className="space-y-1.5">
-                                        <div className="h-3.5 w-28 bg-white/10 rounded" />
-                                        <div className="h-2.5 w-44 bg-white/5 rounded" />
+                                        <div className="h-3.5 w-28 bg-pos-bg-elevated rounded" />
+                                        <div className="h-2.5 w-44 bg-pos-secondary-surface rounded" />
                                     </div>
-                                    <div className="h-9 w-48 bg-white/10 rounded-pos-md" />
+                                    <div className="h-9 w-48 bg-pos-bg-elevated rounded-pos-md" />
                                 </div>
                             ))}
                         </div>

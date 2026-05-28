@@ -108,10 +108,10 @@ export default function AuditLogsPage() {
                     <div className="divide-y divide-pos-border-default animate-pulse">
                         {Array.from({ length: 8 }).map((_, i) => (
                             <div key={i} className="flex items-center gap-4 px-6 py-4">
-                                <div className="h-3 w-32 bg-white/10 rounded shrink-0" />
-                                <div className="h-5 w-20 bg-white/10 rounded-full shrink-0" />
-                                <div className="h-3 flex-1 bg-white/10 rounded" />
-                                <div className="h-3 w-24 bg-white/5 rounded shrink-0" />
+                                <div className="h-3 w-32 bg-pos-bg-elevated rounded shrink-0" />
+                                <div className="h-5 w-20 bg-pos-bg-elevated rounded-full shrink-0" />
+                                <div className="h-3 flex-1 bg-pos-bg-elevated rounded" />
+                                <div className="h-3 w-24 bg-pos-secondary-surface rounded shrink-0" />
                             </div>
                         ))}
                     </div>
