@@ -25,10 +25,8 @@ export default function SettingsPage() {
                 getSettings(),
                 getPaymentMethods(),
             ]);
-            // The API returns { settings: [...] } and { payment_methods: [...] }
-            // Need to normalize based on how they appear in lib/api.ts
-            setSettings(settingsRes || []);
-            setPaymentMethods(pmRes || []);
+            setSettings(settingsRes.settings || []);
+            setPaymentMethods(pmRes.payment_methods || []);
         } catch (err: any) {
             toast.error(err?.message || 'Failed to load settings');
         } finally {

@@ -24,7 +24,7 @@ export default function ShiftManagementPage() {
         setLoading(true);
         try {
             const res = await getShifts();
-            setShifts(res || []);
+            setShifts(res.shifts || []);
         } catch (err: any) {
             toast.error(err?.message || 'Failed to load shifts');
         } finally {
@@ -36,7 +36,7 @@ export default function ShiftManagementPage() {
         setLoadingAdjustments(true);
         try {
             const res = await getCashAdjustments(shiftId);
-            setAdjustments(res || []);
+            setAdjustments(res.cash_adjustments || []);
         } catch (err: any) {
             toast.error('Failed to load adjustments');
         } finally {

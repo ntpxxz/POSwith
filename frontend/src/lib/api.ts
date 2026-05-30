@@ -60,7 +60,12 @@ function put<T>(endpoint: string, body?: unknown): Promise<T> {
   });
 }
 
-
+function patch<T>(endpoint: string, body?: unknown): Promise<T> {
+  return request<T>(endpoint, {
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
 
 function del<T>(endpoint: string): Promise<T> {
   return request<T>(endpoint, { method: 'DELETE' });
@@ -137,87 +142,71 @@ export function updateUser(id: number, data: Partial<import('@/types').User & { 
 }
 
 // ─── Admin: Settings ────────────────────────────────────────────
-export async function getSettings() {
-  const res = await get<{ settings: import('@/types').Setting[] }>('/admin/settings');
-  return res.settings;
+export function getSettings() {
+  return get<{ settings: import('@/types').Setting[] }>('/admin/settings');
 }
 
-export async function updateSettings(data: { key_name: string; value: string }[]) {
-  const res = await put<{ settings: import('@/types').Setting[] }>('/admin/settings', data);
-  return res.settings;
+export function updateSettings(data: { key_name: string; value: string }[]) {
+  return put<{ settings: import('@/types').Setting[] }>('/admin/settings', { settings: data });
 }
 
 // ─── Admin: Payment Methods ─────────────────────────────────────
-export async function getPaymentMethods() {
-  const res = await get<{ payment_methods: import('@/types').PaymentMethod[] }>('/admin/payment-methods');
-  return res.payment_methods;
+export function getPaymentMethods() {
+  return get<{ payment_methods: import('@/types').PaymentMethod[] }>('/admin/payment-methods');
 }
 
 export function updatePaymentMethod(id: number, data: Partial<import('@/types').PaymentMethod>) {
-  return put<import('@/types').PaymentMethod>(`/admin/payment-methods/${id}`, data);
+  return put<{ payment_method: import('@/types').PaymentMethod }>(`/admin/payment-methods/${id}`, data);
 }
 
 // ─── Admin: Shifts ──────────────────────────────────────────────
 export function openShift(data: { openingBalance: number }) {
-  return post<import('@/types').Shift>('/admin/shifts/open', data);
+  return post<{ shift: import('@/types').Shift }>('/shifts/open', { opening_cash: data.openingBalance });
 }
 
-export function closeShift(id: number, data: { closingBalance: number }) {
-  return post<import('@/types').Shift>(`/admin/shifts/${id}/close`, data);
+export function closeShift(data: { closingBalance: number }) {
+  return post<{ shift: import('@/types').Shift }>('/shifts/close', { closing_cash: data.closingBalance });
 }
 
-export async function getShifts(params?: { from?: string; to?: string }) {
+export function getShifts(params?: { from?: string; to?: string }) {
   const query = params
     ? '?' + new URLSearchParams(params as Record<string, string>).toString()
     : '';
-  const res = await get<{ shifts: import('@/types').Shift[] }>(`/admin/shifts${query}`);
-  return res.shifts;
+  return get<{ shifts: import('@/types').Shift[] }>(`/admin/shifts${query}`);
 }
 
 // ─── Admin: Cash Adjustments ────────────────────────────────────
-export async function getCashAdjustments(shiftId?: number) {
-  const query = shiftId ? `?shiftId=${shiftId}` : '';
-  const res = await get<{ cash_adjustments: import('@/types').CashAdjustment[] }>(`/admin/cash-adjustments${query}`);
-  return res.cash_adjustments;
+export function getCashAdjustments(shiftId?: number) {
+  const query = shiftId ? `?shift_id=${shiftId}` : '';
+  return get<{ cash_adjustments: import('@/types').CashAdjustment[] }>(`/admin/cash-adjustments${query}`);
 }
 
-export function createCashAdjustment(data: { type: 'IN' | 'OUT'; amount: number; reason: string }) {
-  return post<import('@/types').CashAdjustment>('/admin/cash-adjustments', data);
+export function createCashAdjustment(data: { shift_id?: number; type: 'IN' | 'OUT'; amount: number; reason: string }) {
+  return post<{ cash_adjustment: import('@/types').CashAdjustment }>('/admin/cash-adjustments', data);
 }
 
 // ─── Admin: Audit Logs ──────────────────────────────────────────
-export async function getAuditLogs(params?: { from?: string; to?: string; action?: string }) {
+export function getAuditLogs(params?: { page?: string; limit?: string; action?: string; entity?: string }) {
   const query = params
     ? '?' + new URLSearchParams(params as Record<string, string>).toString()
     : '';
-  const res = await get<{ audit_logs: import('@/types').AuditLog[]; total: number }>(`/admin/audit-logs${query}`);
-  return res.audit_logs;
+  return get<{ audit_logs: import('@/types').AuditLog[]; pagination?: any }>(`/admin/audit-logs${query}`);
 }
 
 // ─── Admin: Reports ─────────────────────────────────────────────
 export function getSalesReport(params: { from: string; to: string }) {
-  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
-  return get<import('@/types').SalesReport>(`/admin/reports/sales?${q}`);
+  const query = new URLSearchParams(params).toString();
+  return get<import('@/types').SalesReport>(`/admin/reports/sales?${query}`);
 }
 
 export function getProductsReport(params: { from: string; to: string }) {
-  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
-  return get<import('@/types').ProductsReport>(`/admin/reports/products?${q}`);
+  const query = new URLSearchParams(params).toString();
+  return get<import('@/types').ProductsReport>(`/admin/reports/products?${query}`);
 }
 
 export function getPaymentsReport(params: { from: string; to: string }) {
-  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
-  return get<import('@/types').PaymentsReport>(`/admin/reports/payments?${q}`);
-}
-
-export function getStaffReport(params: { from: string; to: string }) {
-  const q = new URLSearchParams({ start_date: params.from, end_date: params.to }).toString();
-  return get<{ staff: import('@/types').StaffReportRow[] }>(`/admin/reports/staff?${q}`);
-}
-
-export async function getShiftReport(shiftId: number) {
-  const res = await get<{ report: import('@/types').ShiftReport }>(`/admin/shifts/${shiftId}/report`);
-  return res.report;
+  const query = new URLSearchParams(params).toString();
+  return get<import('@/types').PaymentsReport>(`/admin/reports/payments?${query}`);
 }
 
 // ─── Admin: Products (CRUD) ─────────────────────────────────────
@@ -237,38 +226,23 @@ export function deleteProduct(id: number) {
   return del<void>(`/admin/products/${id}`);
 }
 
-export async function uploadProductImage(file: File): Promise<string> {
-  const token = localStorage.getItem('pos_token');
-  const form = new FormData();
-  form.append('image', file);
-  const res = await fetch('/api/admin/products/upload-image', {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: form,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || 'Upload failed');
-  }
-  const data = await res.json();
-  return data.url;
+// ─── Admin: Orders (search/refunds) ────────────────────────────
+export function getAdminOrders(params?: { search?: string; status?: string; page?: number; limit?: number }) {
+  const query = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+  return get<{ orders: import('@/types').AdminOrder[]; pagination: { total: number; page: number; limit: number } }>(`/admin/orders${query}`);
 }
 
-// ─── Admin: Orders (refund search) ─────────────────────────────
-export async function getAdminOrders(params?: { search?: string; status?: string; page?: number }) {
-  const query = params ? '?' + new URLSearchParams(
-    Object.fromEntries(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
-  ).toString() : '';
-  const res = await get<{ orders: import('@/types').AdminOrder[]; pagination: { total: number; total_pages: number } }>(`/admin/orders${query}`);
-  return res;
-}
-
-// ─── Admin: Refunds ─────────────────────────────────────────────
 export function createRefund(data: { orderId: number; amount: number; reason: string }) {
-  return post<{ refund: import('@/types').Refund }>('/admin/refunds', data);
+  return post<{ refund: { id: number; amount: number; reason: string } }>('/admin/refunds', data);
+}
+
+// ─── Admin: Staff Reports ───────────────────────────────────────
+export function getStaffReport(params: { from: string; to: string }) {
+  const query = new URLSearchParams(params).toString();
+  return get<{ staff: import('@/types').StaffReportRow[] }>(`/admin/reports/staff?${query}`);
 }
 
 // ─── Hardware Integration ───────────────────────────────────────
 export function requestPrintReceipt(orderId: number) {
-  return post<{ success: boolean; autoPrint: boolean; message: string }>(`/print/receipt/${orderId}`);
+  return post<{ success: boolean; message: string; autoPrint?: boolean }>(`/print/receipt/${orderId}`);
 }
