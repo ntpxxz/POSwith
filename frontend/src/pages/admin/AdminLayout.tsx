@@ -14,6 +14,7 @@ import {
   X,
   ChevronRight,
   Store,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
   { to: '/admin/shifts', icon: Clock, label: 'Shifts' },
   { to: '/admin/audit-logs', icon: FileText, label: 'Audit Logs' },
+  { to: '/admin/refunds', icon: RotateCcw, label: 'Refunds' },
 ];
 
 function getBreadcrumb(pathname: string): string {
@@ -36,6 +38,7 @@ function getBreadcrumb(pathname: string): string {
     '/admin/reports': 'Reports',
     '/admin/shifts': 'Shifts',
     '/admin/audit-logs': 'Audit Logs',
+    '/admin/refunds': 'Refunds',
   };
   return map[pathname] || 'Dashboard';
 }
@@ -52,10 +55,10 @@ export default function AdminLayout() {
         initial={false}
         animate={{ width: sidebarCollapsed ? 72 : 256 }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="flex flex-col bg-[#0f1011] flex-shrink-0 z-20 border-r border-pos-border-default"
+        className="flex flex-col bg-pos-bg-surface flex-shrink-0 z-20 border-r border-pos-border-default"
       >
         {/* Logo / Back to POS */}
-        <Link to="/" className="h-16 flex items-center px-4 border-b border-pos-border-default gap-3 shrink-0 hover:bg-white/5 transition-colors cursor-pointer text-decoration-none">
+        <Link to="/" className="h-16 flex items-center px-4 border-b border-pos-border-default gap-3 shrink-0 hover:bg-black/5 transition-colors cursor-pointer text-decoration-none">
           <div className="w-9 h-9 rounded-pos-sm bg-pos-accent-primary flex items-center justify-center flex-shrink-0 mt-1 mb-1">
             <Store size={20} className="text-white" />
           </div>
@@ -81,7 +84,7 @@ export default function AdminLayout() {
         {/* Collapse toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="mx-3 mt-4 mb-2 p-2 rounded-pos-md text-pos-text-tertiary hover:text-pos-text-primary hover:bg-white/5 transition-colors flex justify-center"
+          className="mx-3 mt-4 mb-2 p-2 rounded-pos-md text-pos-text-tertiary hover:text-pos-text-primary hover:bg-black/5 transition-colors flex justify-center"
         >
           {sidebarCollapsed ? <Menu size={18} /> : <X size={18} />}
         </button>
@@ -95,8 +98,8 @@ export default function AdminLayout() {
               end={item.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-pos-md transition-all duration-150 group font-body font-medium text-pos-sm ${isActive
-                  ? 'bg-white/10 text-pos-text-primary'
-                  : 'text-pos-text-tertiary hover:text-pos-text-primary hover:bg-white/5'
+                  ? 'bg-black/5 text-pos-text-primary border border-pos-border-default shadow-pos-subtle'
+                  : 'text-pos-text-tertiary hover:text-pos-text-primary hover:bg-black/5'
                 }`
               }
             >
@@ -128,7 +131,7 @@ export default function AdminLayout() {
         <div className="px-3 py-4 border-t border-pos-border-default shrink-0">
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-pos-md text-pos-text-tertiary hover:text-pos-accent-danger hover:bg-white/5 transition-colors w-full font-body font-medium text-pos-sm"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-pos-md text-pos-text-tertiary hover:text-pos-accent-danger hover:bg-black/5 transition-colors w-full font-body font-medium text-pos-sm"
           >
             <LogOut size={20} className="flex-shrink-0" />
             <AnimatePresence>
@@ -152,7 +155,7 @@ export default function AdminLayout() {
         {/* Top bar */}
         <header className="h-16 flex items-center justify-between px-8 glass-nav shrink-0 z-10 sticky top-0">
           <div className="flex items-center gap-2 text-pos-text-tertiary">
-            <span className="font-mono text-pos-xs uppercase tracking-widest font-medium bg-white/5 px-2 py-0.5 rounded-pos-sm text-pos-text-secondary border border-white/10">Admin</span>
+            <span className="font-mono text-pos-xs uppercase tracking-widest font-medium bg-black/5 px-2 py-0.5 rounded-pos-sm text-pos-text-secondary border border-pos-border-default">Admin</span>
             <ChevronRight size={14} />
             <span className="font-body font-wght-510 text-pos-base text-pos-text-primary tracking-tight">
               {getBreadcrumb(location.pathname)}
@@ -160,7 +163,7 @@ export default function AdminLayout() {
           </div>
           <div className="flex items-center gap-4">
             <span className="font-mono text-pos-xs font-semibold text-pos-text-secondary uppercase tracking-widest">{user?.name}</span>
-            <div className="w-8 h-8 rounded-pos-pill bg-white/10 border border-white/20 flex items-center justify-center text-pos-text-primary text-[11px] font-bold">
+            <div className="w-8 h-8 rounded-pos-pill bg-black/5 border border-pos-border-default flex items-center justify-center text-pos-text-primary text-[11px] font-bold">
               {user?.name?.charAt(0)}
             </div>
             <span className="font-mono px-2 py-0.5 rounded-pos-pill text-pos-nano font-bold uppercase tracking-widest bg-pos-accent-primary/10 text-pos-accent-primary border border-pos-accent-primary/20">

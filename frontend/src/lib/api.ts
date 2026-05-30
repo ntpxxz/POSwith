@@ -226,7 +226,23 @@ export function deleteProduct(id: number) {
   return del<void>(`/admin/products/${id}`);
 }
 
+// ─── Admin: Orders (search/refunds) ────────────────────────────
+export function getAdminOrders(params?: { search?: string; status?: string; page?: number; limit?: number }) {
+  const query = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
+  return get<{ orders: import('@/types').AdminOrder[]; pagination: { total: number; page: number; limit: number } }>(`/admin/orders${query}`);
+}
+
+export function createRefund(data: { orderId: number; amount: number; reason: string }) {
+  return post<{ refund: { id: number; amount: number; reason: string } }>('/admin/refunds', data);
+}
+
+// ─── Admin: Staff Reports ───────────────────────────────────────
+export function getStaffReport(params: { from: string; to: string }) {
+  const query = new URLSearchParams(params).toString();
+  return get<{ staff: import('@/types').StaffReportRow[] }>(`/admin/reports/staff?${query}`);
+}
+
 // ─── Hardware Integration ───────────────────────────────────────
 export function requestPrintReceipt(orderId: number) {
-  return post<{ success: boolean; message: string }>(`/print/receipt/${orderId}`);
+  return post<{ success: boolean; message: string; autoPrint?: boolean }>(`/print/receipt/${orderId}`);
 }

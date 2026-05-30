@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingCart, Trash2, Plus, Minus, Settings, LogOut, Coffee } from 'lucide-react';
+import { Search, ShoppingCart, Trash2, Plus, Minus, Settings, LogOut, Coffee, Sandwich, Cake, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getProducts } from '@/lib/api';
@@ -8,8 +8,13 @@ import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
 import type { Product } from '@/types';
 
-function formatPrice(n: number): string {
-    return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function CategoryPlaceholder({ category }: { category: string }) {
+    const props = { size: 32, className: 'text-pos-text-disabled' };
+    const cat = category.toLowerCase();
+    if (cat === 'coffee') return <Coffee {...props} />;
+    if (cat === 'sandwich') return <Sandwich {...props} />;
+    if (cat === 'bakery') return <Cake {...props} />;
+    return <ShoppingBag {...props} />;
 }
 
 export default function POSPage() {
@@ -66,18 +71,18 @@ export default function POSPage() {
         <div className="flex h-screen bg-pos-bg-primary font-body selection:bg-pos-accent-primary/20 text-pos-text-primary overflow-hidden">
             {/* Minimal/Raw Sidebar */}
             <aside className="w-20 border-r border-pos-border-default flex flex-col items-center py-8 gap-8 bg-pos-bg-surface z-20 shrink-0">
-                <div className="w-12 h-12 border border-white/10 rounded-full flex items-center justify-center text-pos-text-primary hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="w-12 h-12 border border-pos-border-default rounded-full flex items-center justify-center text-pos-text-primary hover:bg-black/5 transition-colors cursor-pointer">
                     <Coffee size={20} strokeWidth={2.5} />
                 </div>
 
                 <nav className="flex-1 flex flex-col gap-6 w-full items-center pt-8">
-                    <button className="w-12 h-12 flex justify-center items-center rounded-pos-md bg-white/5 border border-white/10 text-pos-text-primary">
+                    <button className="w-12 h-12 flex justify-center items-center rounded-pos-md bg-black/5 border border-pos-border-default text-pos-text-primary">
                         <ShoppingCart size={20} />
                     </button>
                     {user?.role === 'ADMIN' && (
                         <button
                             onClick={() => navigate('/admin')}
-                            className="p-3 text-pos-text-tertiary hover:text-pos-text-primary transition-colors w-12 h-12 flex justify-center items-center"
+                            className="p-3 text-pos-text-tertiary hover:text-pos-text-primary transition-colors w-12 h-12 flex justify-center items-center rounded-pos-md hover:bg-black/5"
                         >
                             <Settings size={20} />
                         </button>
@@ -86,7 +91,7 @@ export default function POSPage() {
 
                 <button
                     onClick={logout}
-                    className="p-3 text-pos-text-tertiary hover:text-pos-accent-danger transition-colors w-12 h-12 flex justify-center items-center"
+                    className="p-3 text-pos-text-tertiary hover:text-pos-accent-danger transition-colors w-12 h-12 flex justify-center items-center rounded-pos-md hover:bg-black/5"
                 >
                     <LogOut size={20} />
                 </button>
@@ -112,7 +117,7 @@ export default function POSPage() {
                             placeholder="Find provision..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-pos-border-default rounded-pos-md text-pos-sm font-body focus:outline-none focus:border-pos-border-focus placeholder:text-pos-text-tertiary transition-colors"
+                            className="w-full pl-10 pr-4 py-2 bg-black/5 border border-pos-border-default rounded-pos-md text-pos-sm font-body focus:outline-none focus:border-pos-border-focus placeholder:text-pos-text-tertiary transition-colors"
                         />
                     </div>
                 </header>
@@ -124,8 +129,8 @@ export default function POSPage() {
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
                             className={`px-3 py-1 font-body text-pos-sm tracking-wide transition-all border rounded-pos-pill whitespace-nowrap ${activeCategory === cat
-                                ? 'bg-white/10 border-white/20 text-pos-text-primary'
-                                : 'bg-transparent border-transparent text-pos-text-tertiary hover:bg-white/5 hover:border-white/10'
+                                ? 'bg-black/10 border-pos-border-default text-pos-text-primary'
+                                : 'bg-transparent border-transparent text-pos-text-tertiary hover:bg-black/5 hover:border-pos-border-default'
                                 }`}
                         >
                             {cat}
@@ -138,7 +143,7 @@ export default function POSPage() {
                     {loading ? (
                         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {[...Array(8)].map((_, i) => (
-                                <div key={i} className="aspect-[4/3] bg-white/5 animate-pulse border border-white/10 rounded-pos-lg" />
+                                <div key={i} className="aspect-[4/3] bg-black/5 animate-pulse border border-pos-border-default rounded-pos-lg" />
                             ))}
                         </div>
                     ) : (
@@ -153,29 +158,35 @@ export default function POSPage() {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ delay: idx * 0.03, duration: 0.3 }}
                                         onClick={() => addToCart(product)}
-                                        className="group text-left bg-white/5 hover:bg-white/10 border border-pos-border-default transition-colors p-4 rounded-pos-lg flex flex-col justify-between aspect-[4/3] relative overflow-hidden"
+                                        className="group text-left bg-pos-bg-surface hover:bg-black/5 border border-pos-border-default transition-colors rounded-pos-lg flex flex-col overflow-hidden"
                                     >
-                                        <div className="flex justify-between items-start w-full relative z-10">
-                                            <p className="text-pos-xs bg-white/10 rounded-pos-sm px-2 py-0.5 border border-white/10 text-pos-text-secondary">
+                                        {/* Image area */}
+                                        <div className="relative w-full aspect-square bg-pos-bg-elevated overflow-hidden">
+                                            {product.image ? (
+                                                <img
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <CategoryPlaceholder category={product.category} />
+                                                </div>
+                                            )}
+                                            <span className="absolute top-2 left-2 text-pos-xs bg-black/60 backdrop-blur-sm rounded-pos-sm px-2 py-0.5 text-white border border-white/20">
                                                 {product.category}
-                                            </p>
-                                            <span className="font-mono text-pos-sm font-semibold text-pos-text-primary absolute top-4 right-4">
-                                                ฿{product.price}
                                             </span>
                                         </div>
 
-                                        <div className="relative z-10 mt-auto">
-                                            <h3 className="font-body font-semibold text-pos-base text-pos-text-primary">
+                                        {/* Info area */}
+                                        <div className="p-3 flex items-center justify-between gap-2">
+                                            <h3 className="font-body font-semibold text-pos-sm text-pos-text-primary truncate">
                                                 {product.name}
                                             </h3>
+                                            <span className="font-mono text-pos-sm font-bold text-pos-text-primary shrink-0">
+                                                ฿{product.price}
+                                            </span>
                                         </div>
-
-                                        {/* Minimal background representation */}
-                                        {product.image ? (
-                                            <img src={product.image} alt="" className="absolute top-1/4 right-0 w-32 h-32 object-cover opacity-[0.03] group-hover:opacity-[0.06] transition-opacity mix-blend-screen" />
-                                        ) : (
-                                            <Coffee className="absolute -bottom-4 -right-4 w-24 h-24 text-pos-border-default opacity-20 transition-transform" />
-                                        )}
                                     </motion.button>
                                 ))}
                             </AnimatePresence>
@@ -224,7 +235,7 @@ export default function POSPage() {
                                         <p className="font-mono text-pos-sm font-semibold">฿{(item.price * item.quantity).toLocaleString()}</p>
                                     </div>
                                     <div className="flex justify-between items-center mt-1">
-                                        <div className="flex items-center gap-3 border border-white/10 rounded-pos-md bg-white/5 px-2 py-1 w-fit">
+                                        <div className="flex items-center gap-3 border border-pos-border-default rounded-pos-md bg-black/5 px-2 py-1 w-fit">
                                             <button onClick={() => updateQuantity(item.productId, -1)} className="text-pos-text-tertiary hover:text-pos-text-primary">
                                                 <Minus size={12} strokeWidth={2.5} />
                                             </button>

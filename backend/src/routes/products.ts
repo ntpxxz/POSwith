@@ -1,47 +1,43 @@
 import { Router, Response } from 'express';
-import db from '../db/schema.js';
+import prisma from '../db/prisma.js';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
 // GET / — list active products (POS view)
-router.get('/', (req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { category } = req.query;
 
-    let sql = 'SELECT id, name, category, price, image_url, sort_order, is_active FROM products WHERE is_active = 1';
-    const params: any[] = [];
-    if (category) {
-      sql += ' AND category = ?';
-      params.push(category);
-    }
-    sql += ' ORDER BY category, sort_order, name';
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        ...(category ? { category: category as string } : {}),
+      },
+      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+    });
 
-    const rawProducts = db.prepare(sql).all(...params) as any[];
-    console.log(`Found ${rawProducts.length} active products`);
-
-    const products = rawProducts.map((p: any) => ({
+    res.json(products.map(p => ({
       id: p.id,
       name: p.name,
       category: p.category,
-      price: p.price,
-      image: p.image_url,
-      active: p.is_active === 1,
-      sortOrder: p.sort_order
-    }));
-    res.json(products);
+      price: Number(p.price),
+      image: p.imageUrl,
+      active: p.isActive,
+      sortOrder: p.sortOrder,
+    })));
   } catch (err) {
     console.error('List products error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET /all — list all products including inactive (admin)
-router.get('/all', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: Response) => {
+// GET /all — all products including inactive (admin)
+router.get('/all', authenticate, authorize(['ADMIN']), async (_req: AuthRequest, res: Response) => {
   try {
-    const products = db.prepare(
-      'SELECT * FROM products ORDER BY category, sort_order, name'
-    ).all();
+    const products = await prisma.product.findMany({
+      orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+    });
     res.json({ products });
   } catch (err) {
     console.error('List all products error:', err);
@@ -50,7 +46,7 @@ router.get('/all', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: R
 });
 
 // POST / — create product (admin)
-router.post('/', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: Response) => {
+router.post('/', authenticate, authorize(['ADMIN']), async (req: AuthRequest, res: Response) => {
   try {
     const { name, category, price, sort_order, image_url } = req.body;
 
@@ -59,15 +55,13 @@ router.post('/', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: Res
       return;
     }
 
-    const result = db.prepare(
-      'INSERT INTO products (name, category, price, sort_order, image_url) VALUES (?, ?, ?, ?, ?)'
-    ).run(name, category, price, sort_order || 0, image_url || null);
+    const product = await prisma.product.create({
+      data: { name, category, price, sortOrder: sort_order || 0, imageUrl: image_url || null },
+    });
 
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
-
-    db.prepare(
-      'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-    ).run('CREATE_PRODUCT', req.user!.id, 'product', result.lastInsertRowid, JSON.stringify({ name, category, price }));
+    await prisma.auditLog.create({
+      data: { action: 'CREATE_PRODUCT', userId: req.user!.id, entity: 'product', entityId: product.id, payload: { name, category, price } },
+    });
 
     res.status(201).json({ product });
   } catch (err) {
@@ -77,10 +71,10 @@ router.post('/', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: Res
 });
 
 // PUT /:id — update product (admin)
-router.put('/:id', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: Response) => {
+router.put('/:id', authenticate, authorize(['ADMIN']), async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(id));
+    const id = Number(req.params.id);
+    const existing = await prisma.product.findUnique({ where: { id } });
 
     if (!existing) {
       res.status(404).json({ error: 'Product not found' });
@@ -89,27 +83,21 @@ router.put('/:id', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: R
 
     const { name, category, price, sort_order, image_url, is_active } = req.body;
 
-    db.prepare(`
-      UPDATE products
-      SET name = COALESCE(?, name),
-          category = COALESCE(?, category),
-          price = COALESCE(?, price),
-          sort_order = COALESCE(?, sort_order),
-          image_url = COALESCE(?, image_url),
-          is_active = COALESCE(?, is_active),
-          updated_at = datetime('now','localtime')
-      WHERE id = ?
-    `).run(
-      name ?? null, category ?? null, price ?? null,
-      sort_order ?? null, image_url ?? null, is_active ?? null,
-      Number(id)
-    );
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        ...(name != null && { name }),
+        ...(category != null && { category }),
+        ...(price != null && { price }),
+        ...(sort_order != null && { sortOrder: sort_order }),
+        ...(image_url !== undefined && { imageUrl: image_url }),
+        ...(is_active != null && { isActive: Boolean(is_active) }),
+      },
+    });
 
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(id));
-
-    db.prepare(
-      'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-    ).run('UPDATE_PRODUCT', req.user!.id, 'product', Number(id), JSON.stringify(req.body));
+    await prisma.auditLog.create({
+      data: { action: 'UPDATE_PRODUCT', userId: req.user!.id, entity: 'product', entityId: id, payload: req.body },
+    });
 
     res.json({ product });
   } catch (err) {
@@ -119,24 +107,22 @@ router.put('/:id', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: R
 });
 
 // DELETE /:id — soft-delete / toggle product (admin)
-router.delete('/:id', authenticate, authorize(['ADMIN']), (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, authorize(['ADMIN']), async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(id)) as any;
+    const id = Number(req.params.id);
+    const existing = await prisma.product.findUnique({ where: { id } });
 
     if (!existing) {
       res.status(404).json({ error: 'Product not found' });
       return;
     }
 
-    const newStatus = existing.is_active ? 0 : 1;
-    db.prepare(
-      'UPDATE products SET is_active = ?, updated_at = datetime(\'now\',\'localtime\') WHERE id = ?'
-    ).run(newStatus, Number(id));
+    const newStatus = !existing.isActive;
+    await prisma.product.update({ where: { id }, data: { isActive: newStatus } });
 
-    db.prepare(
-      'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-    ).run('TOGGLE_PRODUCT', req.user!.id, 'product', Number(id), JSON.stringify({ is_active: newStatus }));
+    await prisma.auditLog.create({
+      data: { action: 'TOGGLE_PRODUCT', userId: req.user!.id, entity: 'product', entityId: id, payload: { is_active: newStatus } },
+    });
 
     res.json({ message: newStatus ? 'Product activated' : 'Product deactivated', is_active: newStatus });
   } catch (err) {

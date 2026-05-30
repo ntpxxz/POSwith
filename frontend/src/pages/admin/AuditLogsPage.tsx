@@ -1,14 +1,10 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
     FileText,
-    Search,
     Filter,
     User as UserIcon,
-    Calendar,
     ChevronLeft,
     ChevronRight,
-    Loader2,
     Database,
     History,
 } from 'lucide-react';
@@ -109,8 +105,15 @@ export default function AuditLogsPage() {
             {/* Logs Table */}
             <div className="bg-pos-bg-surface rounded-pos-lg shadow-pos-card border border-pos-border-default overflow-hidden">
                 {loading ? (
-                    <div className="p-10 flex justify-center">
-                        <Loader2 className="w-8 h-8 text-pos-accent-primary animate-spin" />
+                    <div className="divide-y divide-pos-border-default animate-pulse">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 px-6 py-4">
+                                <div className="h-3 w-32 bg-pos-bg-elevated rounded shrink-0" />
+                                <div className="h-5 w-20 bg-pos-bg-elevated rounded-full shrink-0" />
+                                <div className="h-3 flex-1 bg-pos-bg-elevated rounded" />
+                                <div className="h-3 w-24 bg-pos-secondary-surface rounded shrink-0" />
+                            </div>
+                        ))}
                     </div>
                 ) : logs.length === 0 ? (
                     <div className="p-20 text-center flex flex-col items-center gap-3">

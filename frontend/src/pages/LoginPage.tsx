@@ -51,7 +51,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         className="w-full max-w-sm"
       >
-        <div className="bg-[#0f1011] border border-pos-border-default rounded-pos-xl p-10 shadow-pos-dialog">
+        <div className="bg-pos-bg-surface border border-pos-border-default rounded-pos-xl p-10 shadow-pos-dialog">
           <div className="flex flex-col mb-10">
             <div className="w-10 h-10 text-pos-text-primary mb-6">
               <Coffee size={40} strokeWidth={1.5} />
@@ -71,7 +71,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
                 autoComplete="email"
-                className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-pos-md text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus outline-none transition-colors"
+                className="w-full h-12 px-4 bg-pos-bg-primary border border-pos-border-default rounded-pos-md text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus outline-none transition-colors"
               />
             </div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
                   autoComplete="current-password"
-                  className="w-full h-12 px-4 pr-12 bg-white/5 border border-white/10 rounded-pos-md text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus outline-none transition-colors"
+                  className="w-full h-12 px-4 pr-12 bg-pos-bg-primary border border-pos-border-default rounded-pos-md text-pos-text-primary text-pos-sm placeholder:text-pos-text-tertiary focus:border-pos-border-focus outline-none transition-colors"
                 />
                 <button
                   type="button"

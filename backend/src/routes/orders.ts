@@ -1,188 +1,175 @@
 import { Router, Response } from 'express';
-import db from '../db/schema.js';
+import prisma from '../db/prisma.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-// Helper: generate order number ORD-YYYYMMDD-XXX
-function generateOrderNumber(): string {
-  const now = new Date();
-  const dateStr = now.getFullYear().toString() +
-    String(now.getMonth() + 1).padStart(2, '0') +
-    String(now.getDate()).padStart(2, '0');
-
-  const prefix = `ORD-${dateStr}-`;
-  const last = db.prepare(
-    "SELECT order_number FROM orders WHERE order_number LIKE ? ORDER BY id DESC LIMIT 1"
-  ).get(`${prefix}%`) as { order_number: string } | undefined;
-
+function generateOrderNumber(prefix: string, last: { orderNumber: string } | null): string {
   let seq = 1;
   if (last) {
-    const parts = last.order_number.split('-');
+    const parts = last.orderNumber.split('-');
     seq = parseInt(parts[2], 10) + 1;
   }
-
   return `${prefix}${String(seq).padStart(3, '0')}`;
 }
 
 // POST / — create order
-router.post('/', authenticate, (req: AuthRequest, res: Response) => {
+router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { items, discountType, discountValue } = req.body;
-    console.log('Backend creating order:', { items, discountType, discountValue });
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       res.status(400).json({ error: 'items array is required and must not be empty' });
       return;
     }
 
-    const orderNumber = generateOrderNumber();
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0');
+    const prefix = `ORD-${dateStr}-`;
 
-    const createOrder = db.transaction(() => {
-      // Insert order shell
-      const orderResult = db.prepare(
-        'INSERT INTO orders (order_number, created_by) VALUES (?, ?)'
-      ).run(orderNumber, req.user!.id);
-      const orderId = orderResult.lastInsertRowid as number;
+    const lastOrder = await prisma.order.findFirst({
+      where: { orderNumber: { startsWith: prefix } },
+      orderBy: { id: 'desc' },
+      select: { orderNumber: true },
+    });
+    const orderNumber = generateOrderNumber(prefix, lastOrder);
 
-      let totalAmount = 0;
+    // Fetch all products upfront
+    const productIds = items.map((i: any) => Number(i.productId || i.product_id));
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds }, isActive: true },
+    });
+    const productMap = new Map(products.map(p => [p.id, p]));
 
-      const insertItem = db.prepare(
-        'INSERT INTO order_items (order_id, product_id, name_snapshot, price_snapshot, quantity, total) VALUES (?, ?, ?, ?, ?, ?)'
-      );
-
-      for (const item of items) {
-        const productId = item.productId || item.product_id;
-        const product = db.prepare(
-          'SELECT id, name, price FROM products WHERE id = ? AND is_active = 1'
-        ).get(productId) as { id: number; name: string; price: number } | undefined;
-
-        if (!product) {
-          throw new Error(`Product with id ${productId} not found or inactive`);
-        }
-
-        const quantity = item.quantity || 1;
-        const itemTotal = product.price * quantity;
-        totalAmount += itemTotal;
-
-        insertItem.run(orderId, product.id, product.name, product.price, quantity, itemTotal);
+    for (const item of items) {
+      const productId = Number(item.productId || item.product_id);
+      if (!productMap.has(productId)) {
+        res.status(400).json({ error: `Product with id ${productId} not found or inactive` });
+        return;
       }
+    }
 
-      // Handle Discount
-      let discountAmount = 0;
-      if (discountType && discountValue != null && discountValue > 0) {
-        if (discountType === 'PERCENT') {
-          discountAmount = Math.round(totalAmount * (discountValue / 100) * 100) / 100;
-        } else {
-          discountAmount = discountValue;
-        }
-
-        db.prepare(
-          'INSERT INTO discounts (order_id, type, value, created_by) VALUES (?, ?, ?, ?)'
-        ).run(orderId, discountType, discountValue, req.user!.id);
-      }
-
-      const netAmount = Math.max(0, Math.round((totalAmount - discountAmount) * 100) / 100);
-
-      // Update order totals
-      db.prepare(
-        'UPDATE orders SET total_amount = ?, discount_amount = ?, net_amount = ?, updated_at = datetime(\'now\',\'localtime\') WHERE id = ?'
-      ).run(totalAmount, discountAmount, netAmount, orderId);
-
-      // Audit log
-      db.prepare(
-        'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-      ).run('CREATE_ORDER', req.user!.id, 'order', orderId, JSON.stringify({
-        order_number: orderNumber,
-        total_amount: totalAmount,
-        discount_amount: discountAmount,
-        net_amount: netAmount,
-        items_count: items.length
-      }));
-
-      return orderId;
+    let totalAmount = 0;
+    const orderItemsData = items.map((item: any) => {
+      const productId = Number(item.productId || item.product_id);
+      const product = productMap.get(productId)!;
+      const quantity = item.quantity || 1;
+      const price = Number(product.price);
+      const itemTotal = price * quantity;
+      totalAmount += itemTotal;
+      return {
+        productId: product.id,
+        nameSnapshot: product.name,
+        priceSnapshot: price,
+        quantity,
+        total: itemTotal,
+      };
     });
 
-    const orderId = createOrder();
+    let discountAmount = 0;
+    if (discountType && discountValue != null && discountValue > 0) {
+      if (discountType === 'PERCENT') {
+        discountAmount = Math.round(totalAmount * (discountValue / 100) * 100) / 100;
+      } else {
+        discountAmount = discountValue;
+      }
+    }
+    const netAmount = Math.max(0, Math.round((totalAmount - discountAmount) * 100) / 100);
 
-    const orderData = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as any;
-    const orderItems = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId);
+    const order = await prisma.$transaction(async (tx) => {
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          createdById: req.user!.id,
+          totalAmount,
+          discountAmount,
+          netAmount,
+          items: { create: orderItemsData },
+          ...(discountType && discountValue > 0 ? {
+            discounts: {
+              create: { type: discountType, value: discountValue, createdById: req.user!.id },
+            },
+          } : {}),
+        },
+        include: { items: true },
+      });
 
-    const formattedOrder = {
-      id: orderData.id,
-      orderNumber: orderData.order_number,
-      status: orderData.status,
-      totalAmount: orderData.total_amount,
-      discountAmount: orderData.discount_amount,
-      netTotal: orderData.net_amount,
-      createdAt: orderData.created_at,
-      updatedAt: orderData.updated_at,
-      items: orderItems.map((item: any) => ({
+      await tx.auditLog.create({
+        data: {
+          action: 'CREATE_ORDER', userId: req.user!.id, entity: 'order', entityId: newOrder.id,
+          payload: { order_number: orderNumber, total_amount: totalAmount, discount_amount: discountAmount, net_amount: netAmount, items_count: items.length },
+        },
+      });
+
+      return newOrder;
+    });
+
+    res.status(201).json({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      totalAmount: Number(order.totalAmount),
+      discountAmount: Number(order.discountAmount),
+      netTotal: Number(order.netAmount),
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      items: order.items.map(item => ({
         id: item.id,
-        orderId: item.order_id,
-        productId: item.product_id,
-        productName: item.name_snapshot,
-        unitPrice: item.price_snapshot,
+        orderId: item.orderId,
+        productId: item.productId,
+        productName: item.nameSnapshot,
+        unitPrice: Number(item.priceSnapshot),
         quantity: item.quantity,
-        totalPrice: item.total
-      }))
-    };
-
-    res.status(201).json(formattedOrder);
+        totalPrice: Number(item.total),
+      })),
+    });
   } catch (err: any) {
     console.error('Create order error:', err);
-    if (err.message?.startsWith('Product with id')) {
-      res.status(400).json({ error: err.message });
-      return;
-    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // GET / — list orders
-router.get('/', authenticate, (req: AuthRequest, res: Response) => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { status, date, page = '1', limit = '20' } = req.query;
     const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20));
-    const offset = (pageNum - 1) * limitNum;
 
-    let sql = 'SELECT * FROM orders WHERE 1=1';
-    let countSql = 'SELECT COUNT(*) as total FROM orders WHERE 1=1';
-    const params: any[] = [];
-    const countParams: any[] = [];
-
-    if (status) {
-      sql += ' AND status = ?';
-      countSql += ' AND status = ?';
-      params.push(status);
-      countParams.push(status);
-    }
-
+    const where: any = {};
+    if (status) where.status = status;
     if (date) {
-      sql += ' AND DATE(created_at) = ?';
-      countSql += ' AND DATE(created_at) = ?';
-      params.push(date);
-      countParams.push(date);
+      const d = new Date(date as string);
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      where.createdAt = { gte: d, lt: next };
     }
 
-    const totalRow = db.prepare(countSql).get(...countParams) as { total: number };
+    const [total, orders] = await Promise.all([
+      prisma.order.count({ where }),
+      prisma.order.findMany({
+        where,
+        orderBy: { id: 'desc' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
+      }),
+    ]);
 
-    sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
-    params.push(limitNum, offset);
-
-    const orders = db.prepare(sql).all(...params).map((o: any) => ({
-      id: o.id,
-      orderNumber: o.order_number,
-      status: o.status,
-      totalAmount: o.total_amount,
-      discountAmount: o.discount_amount,
-      netTotal: o.net_amount,
-      createdAt: o.created_at,
-      updatedAt: o.updated_at
-    }));
-
-    res.json(orders);
+    res.json({
+      orders: orders.map(o => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        totalAmount: Number(o.totalAmount),
+        discountAmount: Number(o.discountAmount),
+        netTotal: Number(o.netAmount),
+        createdAt: o.createdAt,
+        updatedAt: o.updatedAt,
+      })),
+      pagination: { page: pageNum, limit: limitNum, total, total_pages: Math.ceil(total / limitNum) },
+    });
   } catch (err) {
     console.error('List orders error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -190,78 +177,83 @@ router.get('/', authenticate, (req: AuthRequest, res: Response) => {
 });
 
 // GET /:id — order detail
-router.get('/:id', authenticate, (req: AuthRequest, res: Response) => {
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const orderData = db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id)) as any;
-
-    if (!orderData) {
-      res.status(404).json({ error: 'Order not found' });
-      return;
-    }
-
-    const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(Number(id));
-    const payments = db.prepare('SELECT * FROM payments WHERE order_id = ?').all(Number(id));
-    const discounts = db.prepare('SELECT * FROM discounts WHERE order_id = ?').all(Number(id));
-
-    const formattedOrder = {
-      id: orderData.id,
-      orderNumber: orderData.order_number,
-      status: orderData.status,
-      totalAmount: orderData.total_amount,
-      discountAmount: orderData.discount_amount,
-      netTotal: orderData.net_amount,
-      createdAt: orderData.created_at,
-      items: items.map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        productName: item.name_snapshot,
-        unitPrice: item.price_snapshot,
-        quantity: item.quantity,
-        totalPrice: item.total
-      })),
-      payments: payments.map((p: any) => ({
-        id: p.id,
-        amount: p.amount,
-        method: p.method,
-        status: p.status,
-        createdAt: p.created_at
-      })),
-      discounts
-    };
-
-    res.json(formattedOrder);
-  } catch (err) {
-    console.error('Get order error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// POST /:id/cancel — cancel pending order
-router.post('/:id/cancel', authenticate, (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id)) as any;
+    const id = Number(req.params.id);
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true, payments: true, discounts: true },
+    });
 
     if (!order) {
       res.status(404).json({ error: 'Order not found' });
       return;
     }
 
+    res.json({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      totalAmount: Number(order.totalAmount),
+      discountAmount: Number(order.discountAmount),
+      netTotal: Number(order.netAmount),
+      createdAt: order.createdAt,
+      items: order.items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.nameSnapshot,
+        unitPrice: Number(item.priceSnapshot),
+        quantity: item.quantity,
+        totalPrice: Number(item.total),
+      })),
+      payments: order.payments.map(p => ({
+        id: p.id,
+        amount: Number(p.amount),
+        method: p.method,
+        status: p.status,
+        createdAt: p.createdAt,
+      })),
+      discounts: order.discounts,
+    });
+  } catch (err) {
+    console.error('Get order error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /:id/cancel
+router.post('/:id/cancel', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const { reason } = req.body;
+    const order = await prisma.order.findUnique({ where: { id } });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
     if (order.status !== 'PENDING') {
       res.status(400).json({ error: 'Only pending orders can be cancelled' });
       return;
     }
 
-    db.prepare(
-      "UPDATE orders SET status = 'CANCELLED', updated_at = datetime('now','localtime') WHERE id = ?"
-    ).run(Number(id));
+    const updated = await prisma.$transaction(async (tx) => {
+      const o = await tx.order.update({
+        where: { id },
+        data: { status: 'CANCELLED', cancelReason: reason ? String(reason).trim() : null },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'CANCEL_ORDER',
+          userId: req.user!.id,
+          entity: 'order',
+          entityId: id,
+          payload: { order_number: order.orderNumber, reason: reason || null },
+        },
+      });
+      return o;
+    });
 
-    db.prepare(
-      'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-    ).run('CANCEL_ORDER', req.user!.id, 'order', Number(id), JSON.stringify({ order_number: order.order_number }));
-
-    const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id));
     res.json({ order: updated });
   } catch (err) {
     console.error('Cancel order error:', err);
@@ -270,72 +262,67 @@ router.post('/:id/cancel', authenticate, (req: AuthRequest, res: Response) => {
 });
 
 // POST /:id/discount — apply discount
-router.post('/:id/discount', authenticate, (req: AuthRequest, res: Response) => {
+router.post('/:id/discount', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
     const { type, value } = req.body;
 
     if (!type || value == null) {
       res.status(400).json({ error: 'type and value are required' });
       return;
     }
-
     if (!['PERCENT', 'FIXED'].includes(type)) {
       res.status(400).json({ error: 'type must be PERCENT or FIXED' });
       return;
     }
-
     if (value <= 0) {
       res.status(400).json({ error: 'value must be positive' });
       return;
     }
 
-    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id)) as any;
+    const order = await prisma.order.findUnique({ where: { id } });
     if (!order) {
       res.status(404).json({ error: 'Order not found' });
       return;
     }
-
     if (order.status !== 'PENDING') {
       res.status(400).json({ error: 'Can only discount pending orders' });
       return;
     }
 
+    const totalAmount = Number(order.totalAmount);
     let discountAmount: number;
+
     if (type === 'PERCENT') {
       if (value > 100) {
         res.status(400).json({ error: 'Percent discount cannot exceed 100' });
         return;
       }
-      discountAmount = Math.round(order.total_amount * (value / 100) * 100) / 100;
+      discountAmount = Math.round(totalAmount * (value / 100) * 100) / 100;
     } else {
       discountAmount = value;
     }
 
-    const netAmount = Math.round((order.total_amount - discountAmount) * 100) / 100;
-
+    const netAmount = Math.round((totalAmount - discountAmount) * 100) / 100;
     if (netAmount < 0) {
       res.status(400).json({ error: 'Discount cannot exceed order total' });
       return;
     }
 
-    const applyDiscount = db.transaction(() => {
-      db.prepare(
-        'INSERT INTO discounts (order_id, type, value, created_by) VALUES (?, ?, ?, ?)'
-      ).run(Number(id), type, value, req.user!.id);
-
-      db.prepare(
-        "UPDATE orders SET discount_amount = ?, net_amount = ?, updated_at = datetime('now','localtime') WHERE id = ?"
-      ).run(discountAmount, netAmount, Number(id));
-
-      db.prepare(
-        'INSERT INTO audit_logs (action, user_id, entity, entity_id, payload) VALUES (?, ?, ?, ?, ?)'
-      ).run('APPLY_DISCOUNT', req.user!.id, 'order', Number(id), JSON.stringify({ type, value, discount_amount: discountAmount, net_amount: netAmount }));
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.discount.create({
+        data: { orderId: id, type, value, createdById: req.user!.id },
+      });
+      const o = await tx.order.update({
+        where: { id },
+        data: { discountAmount, netAmount },
+      });
+      await tx.auditLog.create({
+        data: { action: 'APPLY_DISCOUNT', userId: req.user!.id, entity: 'order', entityId: id, payload: { type, value, discount_amount: discountAmount, net_amount: netAmount } },
+      });
+      return o;
     });
 
-    applyDiscount();
-
-    const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(Number(id));
     res.json({ order: updated });
   } catch (err) {
     console.error('Apply discount error:', err);
@@ -343,60 +330,53 @@ router.post('/:id/discount', authenticate, (req: AuthRequest, res: Response) => 
   }
 });
 
-// GET /:id/receipt — data for printing receipt
-router.get('/:id/receipt', authenticate, (req: AuthRequest, res: Response) => {
+// GET /:id/receipt
+router.get('/:id/receipt', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const orderData = db.prepare(`
-      SELECT o.*, u.name as cashier_name 
-      FROM orders o 
-      LEFT JOIN users u ON o.created_by = u.id 
-      WHERE o.id = ?
-    `).get(Number(id)) as any;
+    const id = Number(req.params.id);
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true, payments: true, createdBy: { select: { name: true } } },
+    });
 
-    if (!orderData) {
+    if (!order) {
       res.status(404).json({ error: 'Order not found' });
       return;
     }
 
-    const items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(Number(id));
-    const payments = db.prepare('SELECT * FROM payments WHERE order_id = ?').all(Number(id));
+    const settings = await prisma.setting.findMany({
+      where: { keyName: { in: ['SHOP_NAME', 'RECEIPT_FOOTER', 'TAX_PERCENT'] } },
+    });
+    const shopInfo = Object.fromEntries(settings.map(s => [s.keyName, s.value]));
 
-    // Get shop settings
-    const settings = db.prepare("SELECT key_name, value FROM settings WHERE key_name IN ('SHOP_NAME', 'RECEIPT_FOOTER', 'TAX_PERCENT')").all() as any[];
-    const shopInfo: any = {};
-    settings.forEach(s => { shopInfo[s.key_name] = s.value; });
-
-    const formattedOrder = {
-      id: orderData.id,
-      orderNumber: orderData.order_number,
-      status: orderData.status,
-      totalAmount: orderData.total_amount,
-      discountAmount: orderData.discount_amount,
-      netTotal: orderData.net_amount,
-      createdAt: orderData.created_at,
-      items: items.map((item: any) => ({
+    res.json({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      totalAmount: Number(order.totalAmount),
+      discountAmount: Number(order.discountAmount),
+      netTotal: Number(order.netAmount),
+      createdAt: order.createdAt,
+      items: order.items.map(item => ({
         id: item.id,
-        productId: item.product_id,
-        productName: item.name_snapshot,
-        unitPrice: item.price_snapshot,
+        productId: item.productId,
+        productName: item.nameSnapshot,
+        unitPrice: Number(item.priceSnapshot),
         quantity: item.quantity,
-        totalPrice: item.total
+        totalPrice: Number(item.total),
       })),
-      payments: payments.map((p: any) => ({
+      payments: order.payments.map(p => ({
         id: p.id,
-        amount: p.amount,
+        amount: Number(p.amount),
         method: p.method,
         status: p.status,
-        createdAt: p.created_at
+        createdAt: p.createdAt,
       })),
-      cashierName: orderData.cashier_name,
-      shopName: shopInfo['SHOP_NAME'] || 'Sandwich & Coffee',
-      receiptFooter: shopInfo['RECEIPT_FOOTER'] || 'Thank you for your business!',
-      taxPercent: Number(shopInfo['TAX_PERCENT'] || 0)
-    };
-
-    res.json(formattedOrder);
+      cashierName: order.createdBy?.name ?? null,
+      shopName: shopInfo['SHOP_NAME'] ?? 'Sandwich & Coffee',
+      receiptFooter: shopInfo['RECEIPT_FOOTER'] ?? 'Thank you for your business!',
+      taxPercent: Number(shopInfo['TAX_PERCENT'] ?? 0),
+    });
   } catch (err) {
     console.error('Get receipt error:', err);
     res.status(500).json({ error: 'Internal server error' });

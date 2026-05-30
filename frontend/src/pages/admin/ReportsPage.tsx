@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
     BarChart,
@@ -17,17 +17,18 @@ import {
 } from 'recharts';
 import {
     Calendar,
-    Filter,
     Download,
-    Loader2,
     TrendingUp,
     Package,
     CreditCard,
     RefreshCw,
+    Users,
 } from 'lucide-react';
 import { getSalesReport, getProductsReport, getPaymentsReport } from '@/lib/api';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+
 
 const COLORS = ['#FF6B35', '#10D98A', '#4FC3F7', '#F5A623', '#FF4757', '#9D50BB'];
 
@@ -40,6 +41,7 @@ export default function ReportsPage() {
     const [salesData, setSalesData] = useState<any>(null);
     const [productsData, setProductsData] = useState<any[]>([]);
     const [paymentsData, setPaymentsData] = useState<any>(null);
+    const navigate = useNavigate();
 
     const fetchData = async () => {
         setLoading(true);
@@ -73,10 +75,86 @@ export default function ReportsPage() {
         });
     };
 
+    const exportCSV = useCallback(() => {
+        if (!productsData.length) { toast.error('No product data to export'); return; }
+        const headers = ['Product', 'Category', 'Orders', 'Sold Qty', 'Revenue (฿)'];
+        const rows = productsData.map((p: any) => [
+            `"${p.product_name}"`,
+            `"${p.category ?? ''}"`  ,
+            p.order_count,
+            p.total_quantity,
+            p.total_sales.toFixed(2),
+        ]);
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `product-report_${dateRange.from}_${dateRange.to}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('CSV downloaded');
+    }, [productsData, dateRange]);
+
+
     if (loading && !salesData) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <Loader2 className="w-8 h-8 text-pos-accent-primary animate-spin" />
+            <div className="space-y-6 pb-12 animate-pulse">
+                {/* Header */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="h-6 w-24 bg-black/10 rounded" />
+                        <div className="h-3 w-48 bg-black/5 rounded" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-32 bg-black/10 rounded-pos-md" />
+                        <div className="h-9 w-56 bg-black/10 rounded-pos-md" />
+                        <div className="h-9 w-9 bg-black/10 rounded-pos-md" />
+                    </div>
+                </div>
+                {/* Summary cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[0, 1, 2].map((i) => (
+                        <div key={i} className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-5 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded bg-black/10" />
+                                <div className="h-3 w-20 bg-black/10 rounded" />
+                            </div>
+                            <div className="h-8 w-36 bg-black/10 rounded" />
+                        </div>
+                    ))}
+                </div>
+                {/* Line chart */}
+                <div className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-6 space-y-4">
+                    <div className="h-4 w-28 bg-black/10 rounded" />
+                    <div className="h-80 bg-black/5 rounded-pos-md" />
+                </div>
+                {/* Two charts row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {[0, 1].map((i) => (
+                        <div key={i} className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default p-6 space-y-4">
+                            <div className="h-4 w-32 bg-black/10 rounded" />
+                            <div className="h-72 bg-black/5 rounded-pos-md" />
+                        </div>
+                    ))}
+                </div>
+                {/* Product table */}
+                <div className="bg-pos-bg-surface rounded-pos-lg border border-pos-border-default overflow-hidden">
+                    <div className="p-5 border-b border-pos-border-default">
+                        <div className="h-4 w-44 bg-black/10 rounded" />
+                    </div>
+                    <div className="p-6 space-y-3">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i} className="flex gap-4">
+                                <div className="h-4 flex-1 bg-black/10 rounded" />
+                                <div className="h-4 w-20 bg-black/10 rounded" />
+                                <div className="h-4 w-12 bg-black/5 rounded" />
+                                <div className="h-4 w-12 bg-black/5 rounded" />
+                                <div className="h-4 w-24 bg-black/10 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }
@@ -91,6 +169,14 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Staff Reports shortcut */}
+                    <button
+                        onClick={() => navigate('/admin/staff-reports')}
+                        className="flex items-center gap-2 px-3 py-2 bg-pos-bg-surface border border-pos-border-default rounded-pos-md text-pos-xs text-pos-text-secondary hover:text-pos-text-primary hover:border-pos-border-focus transition-colors"
+                    >
+                        <Users size={14} />
+                        Staff Reports
+                    </button>
                     <div className="flex bg-pos-bg-surface border border-pos-border-default rounded-pos-md p-1">
                         {[7, 30, 90].map((days) => (
                             <button
@@ -119,6 +205,13 @@ export default function ReportsPage() {
                         />
                     </div>
                     <button
+                        onClick={exportCSV}
+                        title="Export products to CSV"
+                        className="p-2.5 bg-pos-bg-surface border border-pos-border-default rounded-pos-md text-pos-text-secondary hover:text-pos-accent-success transition-colors"
+                    >
+                        <Download size={16} />
+                    </button>
+                    <button
                         onClick={fetchData}
                         className="p-2.5 bg-pos-bg-surface border border-pos-border-default rounded-pos-md text-pos-text-secondary hover:text-pos-accent-primary transition-colors"
                     >
@@ -143,7 +236,7 @@ export default function ReportsPage() {
                 <div className="bg-pos-bg-surface rounded-pos-lg shadow-pos-card p-5 border border-pos-border-default">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="p-2 rounded bg-pos-accent-info/10 text-pos-accent-info">
-                            <Filter size={18} />
+                            <TrendingUp size={18} style={{ transform: 'scaleX(-1)' }} />
                         </div>
                         <span className="text-pos-sm text-pos-text-secondary">Orders</span>
                     </div>
@@ -170,15 +263,15 @@ export default function ReportsPage() {
                 <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={salesData?.daily || []}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#2E2E4A" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" vertical={false} />
                             <XAxis
                                 dataKey="date"
-                                tick={{ fill: '#A0A0B8', fontSize: 10 }}
+                                tick={{ fill: '#64748b', fontSize: 10 }}
                                 tickFormatter={(val) => format(new Date(val), 'dd MMM')}
                             />
-                            <YAxis tick={{ fill: '#A0A0B8', fontSize: 10 }} tickFormatter={(val) => `฿${val / 1000}k`} />
+                            <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(val) => `฿${val / 1000}k`} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#252540', border: '1px solid #2E2E4A', borderRadius: '8px' }}
+                                contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                 labelFormatter={(label) => format(new Date(label), 'dd MMMM yyyy')}
                                 formatter={(val: number) => [formatBaht(val), 'Sales']}
                             />
@@ -217,7 +310,7 @@ export default function ReportsPage() {
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#252540', border: '1px solid #2E2E4A', borderRadius: '8px' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                     formatter={(val: number) => [formatBaht(val), 'Total']}
                                 />
                                 <Legend verticalAlign="bottom" height={36} />
@@ -236,16 +329,16 @@ export default function ReportsPage() {
                                 data={productsData.slice(0, 8)}
                                 margin={{ left: 40 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#2E2E4A" horizontal={true} vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" horizontal={true} vertical={false} />
                                 <XAxis type="number" hide />
                                 <YAxis
                                     dataKey="product_name"
                                     type="category"
-                                    tick={{ fill: '#A0A0B8', fontSize: 10 }}
+                                    tick={{ fill: '#64748b', fontSize: 10 }}
                                     width={100}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#252540', border: '1px solid #2E2E4A', borderRadius: '8px' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                     formatter={(val: number) => [val.toLocaleString(), 'Sold']}
                                 />
                                 <Bar dataKey="total_quantity" fill="#10D98A" radius={[0, 4, 4, 0]} />

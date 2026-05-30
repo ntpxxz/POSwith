@@ -8,6 +8,7 @@ import orderRoutes from './routes/orders.js';
 import paymentRoutes from './routes/payments.js';
 import adminRoutes from './routes/admin.js';
 import printRoutes from './routes/print.js';
+import healthRoutes from './routes/health.js';
 import { authenticate } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,6 +28,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', authenticate, orderRoutes);
@@ -37,16 +39,22 @@ app.use('/api/admin', authenticate, adminRoutes);
 // Static files for product images if any
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Error:', err.stack || err.message || err);
+    
+    const statusCode = err.status || err.statusCode || 500;
+    res.status(statusCode).json({
+        error: process.env.NODE_ENV === 'production' 
+            ? 'Internal Server Error' 
+            : err.message || 'Internal Server Error'
+    });
 });
 
-// Error handling for debugging
+// Process-level error handling
 process.on('uncaughtException', (err) => {
     console.error('💥 UNCAUGHT EXCEPTION! Shutting down...');
-    console.error(err.name, err.message);
-    console.error(err.stack);
+    console.error(err.name, err.message, err.stack);
     process.exit(1);
 });
 

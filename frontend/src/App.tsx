@@ -14,8 +14,10 @@ const ProductManagementPage = lazy(() => import('@/pages/admin/ProductManagement
 const UserManagementPage = lazy(() => import('@/pages/admin/UserManagementPage'));
 const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 const ReportsPage = lazy(() => import('@/pages/admin/ReportsPage'));
+const StaffReportsPage = lazy(() => import('@/pages/admin/StaffReportsPage'));
 const ShiftManagementPage = lazy(() => import('@/pages/admin/ShiftManagementPage'));
 const AuditLogsPage = lazy(() => import('@/pages/admin/AuditLogsPage'));
+const RefundPage = lazy(() => import('@/pages/admin/RefundPage'));
 
 function LoadingScreen() {
   return (
@@ -74,8 +76,10 @@ export default function App() {
                 <Route path="users" element={<UserManagementPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
+                <Route path="staff-reports" element={<StaffReportsPage />} />
                 <Route path="shifts" element={<ShiftManagementPage />} />
                 <Route path="audit-logs" element={<AuditLogsPage />} />
+                <Route path="refunds" element={<RefundPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

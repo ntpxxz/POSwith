@@ -5,37 +5,37 @@
 @tailwind utilities;
 
 :root {
-  /* Linear Palette */
-  --color-marketing-black: #08090a;
-  --color-panel-dark: #0f1011;
-  --color-level3-surface: #191a1b;
-  --color-secondary-surface: #28282c;
+  /* Light Palette */
+  --color-marketing-white: #f8fafc;
+  --color-panel-light: #ffffff;
+  --color-level3-surface: #f1f5f9;
+  --color-secondary-surface: #e2e8f0;
 
-  --color-text-primary: #f7f8f8;
-  --color-text-secondary: #d0d6e0;
-  --color-text-tertiary: #8a8f98;
-  --color-text-quaternary: #62666d;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-tertiary: #64748b;
+  --color-text-quaternary: #94a3b8;
 
-  --color-brand-indigo: #5e6ad2;
-  --color-accent-violet: #7170ff;
-  --color-accent-hover: #828fff;
+  --color-brand-indigo: #4f46e5;
+  --color-accent-violet: #6366f1;
+  --color-accent-hover: #818cf8;
 
-  --color-status-green: #27a644;
+  --color-status-green: #16a34a;
   --color-status-emerald: #10b981;
 
   /* Semantic Variables (Mapped for Tailwind) */
-  --color-bg-primary: var(--color-marketing-black);
-  --color-bg-surface: var(--color-panel-dark);
+  --color-bg-primary: var(--color-marketing-white);
+  --color-bg-surface: var(--color-panel-light);
   --color-bg-elevated: var(--color-level3-surface);
 
   --color-accent-primary: var(--color-brand-indigo);
   --color-accent-success: var(--color-status-green);
-  --color-accent-warning: #f59e0b;
-  --color-accent-danger: #ef4444;
+  --color-accent-warning: #d97706;
+  --color-accent-danger: #dc2626;
   --color-accent-info: var(--color-accent-violet);
 
-  --color-border-subtle: rgba(255, 255, 255, 0.05);
-  --color-border-standard: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(0, 0, 0, 0.05);
+  --color-border-standard: rgba(0, 0, 0, 0.1);
   --color-border-default: var(--color-border-standard);
   --color-border-focus: var(--color-accent-violet);
 
@@ -107,7 +107,7 @@ h6 {
 
 /* Linear Glass Nav */
 .glass-nav {
-  background-color: rgba(15, 16, 17, 0.8);
+  background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border-subtle);
@@ -125,12 +125,12 @@ h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #23252a;
+  background: #cbd5e1;
   border-radius: var(--radius-pill);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #34343a;
+  background: #94a3b8;
 }
 
 /* Hide print root on screen */

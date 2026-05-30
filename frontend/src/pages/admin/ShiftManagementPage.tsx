@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Clock,
-    User as UserIcon,
     ChevronRight,
-    Plus,
     ArrowUpRight,
     ArrowDownRight,
-    Search,
     Loader2,
     Lock,
     Unlock,
@@ -27,7 +24,7 @@ export default function ShiftManagementPage() {
         setLoading(true);
         try {
             const res = await getShifts();
-            setShifts((res as any).shifts || []);
+            setShifts(res.shifts || []);
         } catch (err: any) {
             toast.error(err?.message || 'Failed to load shifts');
         } finally {
@@ -39,7 +36,7 @@ export default function ShiftManagementPage() {
         setLoadingAdjustments(true);
         try {
             const res = await getCashAdjustments(shiftId);
-            setAdjustments((res as any).cash_adjustments || []);
+            setAdjustments(res.cash_adjustments || []);
         } catch (err: any) {
             toast.error('Failed to load adjustments');
         } finally {

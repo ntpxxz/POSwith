@@ -157,3 +157,58 @@ export interface PaymentsReport {
   payments: Payment[];
   summary: { method: string; total: number; count: number }[];
 }
+
+export interface Refund {
+  id: number;
+  orderId: number;
+  amount: number;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface AdminOrder {
+  id: number;
+  orderNumber: string;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
+  totalAmount: number;
+  discountAmount: number;
+  netTotal: number;
+  createdAt: string;
+  items: { id: number; productName: string; unitPrice: number; quantity: number; totalPrice: number }[];
+  payments: { id: number; method: string; amount: number; status: string }[];
+  refunds: { id: number; amount: number; reason: string | null; createdAt: string }[];
+}
+
+export interface StaffReportRow {
+  userId: number;
+  userName: string;
+  totalOrders: number;
+  totalSales: number;
+  avgOrderValue: number;
+  cashOrders: number;
+  qrOrders: number;
+  discountGiven: number;
+  refundCount: number;
+  refundAmount: number;
+}
+
+export interface ShiftReport {
+  shiftId: number;
+  openedAt: string;
+  closedAt: string | null;
+  status: 'OPEN' | 'CLOSED';
+  openedBy: string;
+  closedBy: string | null;
+  openingCash: number;
+  closingCash: number | null;
+  cashSales: number;
+  qrSales: number;
+  totalSales: number;
+  totalOrders: number;
+  cashIn: number;
+  cashOut: number;
+  expectedCash: number;
+  difference: number | null;
+  adjustments: { id: number; type: 'IN' | 'OUT'; amount: number; reason: string | null; createdAt: string }[];
+}
+

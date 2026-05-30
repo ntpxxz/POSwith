@@ -22,7 +22,7 @@ const PIE_COLORS = ['#FF6B35', '#10D98A', '#4FC3F7', '#F5A623', '#FF4757'];
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   PAID: { bg: 'bg-pos-accent-success/10', text: 'text-pos-accent-success' },
   COMPLETED: { bg: 'bg-pos-accent-success/10', text: 'text-pos-accent-success' },
-  PENDING: { bg: 'bg-white/5', text: 'text-pos-text-secondary' },
+  PENDING: { bg: 'bg-black/5', text: 'text-pos-text-secondary' },
   CANCELLED: { bg: 'bg-pos-accent-danger/10', text: 'text-pos-accent-danger' },
   REFUNDED: { bg: 'bg-pos-accent-warning/10', text: 'text-pos-accent-warning' },
 };
@@ -33,18 +33,18 @@ function formatBaht(n: number): string {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white/5 rounded-pos-lg shadow-pos-subtle p-6 animate-pulse border border-white/10">
-      <div className="h-4 w-24 bg-white/10 rounded mb-3" />
-      <div className="h-8 w-32 bg-white/10 rounded" />
+    <div className="bg-black/5 rounded-pos-lg shadow-pos-subtle p-6 animate-pulse border border-pos-border-default">
+      <div className="h-4 w-24 bg-black/10 rounded mb-3" />
+      <div className="h-8 w-32 bg-black/10 rounded" />
     </div>
   );
 }
 
 function SkeletonChart() {
   return (
-    <div className="bg-[#191a1b] rounded-pos-xl shadow-pos-subtle p-6 animate-pulse h-80 border border-pos-border-default">
-      <div className="h-4 w-40 bg-white/10 rounded mb-4" />
-      <div className="h-full bg-white/10 rounded" />
+    <div className="bg-pos-bg-surface rounded-pos-xl shadow-pos-subtle p-6 animate-pulse h-80 border border-pos-border-default">
+      <div className="h-4 w-40 bg-black/10 rounded mb-4" />
+      <div className="h-full bg-black/10 rounded" />
     </div>
   );
 }
@@ -92,13 +92,13 @@ export default function DashboardPage() {
       label: 'Today Sales',
       value: data ? formatBaht(data.todaySales) : '-',
       icon: DollarSign,
-      color: 'text-[#0071e3]',
+      color: 'text-pos-accent-primary',
     },
     {
       label: 'Today Orders',
       value: data ? data.todayOrders.toString() : '-',
       icon: ShoppingCart,
-      color: 'text-[#0071e3]',
+      color: 'text-pos-accent-primary',
     },
     {
       label: 'Avg Order Value',
@@ -127,7 +127,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.3 }}
-              className="bg-[#191a1b] rounded-pos-xl shadow-pos-subtle p-6 border border-pos-border-default hover:bg-white/5 transition-colors"
+              className="bg-pos-bg-surface rounded-pos-xl shadow-pos-subtle p-6 border border-pos-border-default hover:bg-black/5 transition-colors"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="font-body text-pos-xs font-semibold text-pos-text-secondary uppercase tracking-wide">{card.label}</span>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.3 }}
-              className="bg-[#191a1b] rounded-pos-xl shadow-pos-subtle p-6 border border-pos-border-default"
+              className="bg-pos-bg-surface rounded-pos-xl shadow-pos-subtle p-6 border border-pos-border-default"
             >
               <h3 className="font-body font-wght-510 text-pos-lg text-pos-text-primary tracking-tight mb-6">
                 Sales by Payment Method
@@ -170,15 +170,15 @@ export default function DashboardPage() {
                     <YAxis tick={{ fill: '#86868b', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#191a1b',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid rgba(0,0,0,0.1)',
                         borderRadius: '8px',
-                        color: '#f7f8f8',
+                        color: '#0f172a',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         fontWeight: 400,
                       }}
                       formatter={(value: number) => [formatBaht(value), 'Total']}
-                      cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                      cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                     />
                     <Bar dataKey="total" fill="#0071e3" radius={[4, 4, 0, 0]} maxBarSize={48} />
                   </BarChart>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.3 }}
-              className="bg-[#191a1b] rounded-pos-xl shadow-pos-subtle p-6 border border-pos-border-default"
+              className="bg-pos-bg-surface rounded-pos-xl shadow-pos-subtle p-6 border border-pos-border-default"
             >
               <h3 className="font-body font-wght-510 text-pos-lg text-pos-text-primary tracking-tight mb-6">
                 Payment Breakdown
@@ -227,10 +227,10 @@ export default function DashboardPage() {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#191a1b',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid rgba(0,0,0,0.1)',
                         borderRadius: '8px',
-                        color: '#f7f8f8',
+                        color: '#0f172a',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         fontWeight: 400,
                       }}
@@ -256,7 +256,7 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.3 }}
-        className="bg-[#191a1b] rounded-pos-xl shadow-pos-subtle overflow-hidden border border-pos-border-default"
+        className="bg-pos-bg-surface rounded-pos-xl shadow-pos-subtle overflow-hidden border border-pos-border-default"
       >
         <div className="p-6 border-b border-pos-border-default">
           <h3 className="font-body font-wght-510 text-pos-lg text-pos-text-primary tracking-tight">
@@ -266,14 +266,14 @@ export default function DashboardPage() {
         {loading ? (
           <div className="p-6 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 bg-[var(--color-light-gray)] rounded animate-pulse" />
+              <div key={i} className="h-10 bg-pos-bg-elevated rounded animate-pulse" />
             ))}
           </div>
         ) : data?.recentOrders && data.recentOrders.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="font-mono text-pos-xs text-pos-text-tertiary uppercase tracking-widest border-b border-pos-border-default bg-white/5">
+                <tr className="font-mono text-pos-xs text-pos-text-tertiary uppercase tracking-widest border-b border-pos-border-default bg-black/5">
                   <th className="text-left px-6 py-4 font-semibold">#</th>
                   <th className="text-left px-6 py-4 font-semibold">Time</th>
                   <th className="text-left px-6 py-4 font-semibold">Items</th>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                   return (
                     <tr
                       key={order.id}
-                      className="hover:bg-white/5 transition-colors"
+                      className="hover:bg-black/5 transition-colors"
                     >
                       <td className="px-6 py-4 font-mono text-pos-sm text-pos-text-primary font-medium">
                         {order.orderNumber || order.id}
